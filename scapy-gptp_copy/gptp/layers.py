@@ -1,5 +1,5 @@
 from scapy.fields import BitEnumField, BitField, ByteField, ConditionalField, FlagsField, \
-        LongField, ShortField, SignedByteField, XBitField, XByteField, XIntField, XStrFixedLenField
+        LongField, ShortField, SignedByteField, XBitField, XByteField, XIntField, XStrFixedLenField, SignedShortField
 from scapy.layers.l2 import Ether
 from scapy.packet import Packet, bind_layers
 
@@ -32,7 +32,7 @@ class PTPv2(Packet):
     fields_desc = [
         BitField("transportSpecific", 1, 4),
         BitEnumField("messageType", 0, 4, MSG_TYPES),
-        XBitField("reserved0", 0, 4),
+        XBitField("minorVersionPTP", 0, 4),
         BitField("versionPTP", 0x2, 4),
         ShortField("messageLength", 34),
         ByteField("domainNumber", 0),
@@ -45,21 +45,35 @@ class PTPv2(Packet):
         XByteField("control", 0),
         SignedByteField("logMessageInterval", -3),
 
+        # Announce
+        ConditionalField(TimestampField("originTimestamp_announce", 0), lambda pkt: pkt.is_announce),
+        ConditionalField(SignedShortField("currentUtcOffset", 0), lambda pkt: pkt.is_announce),
+        ConditionalField(BitField("reserved", 0, 8), lambda pkt: pkt.is_announce),
+        ConditionalField(ByteField("grandmasterPriority1", 0), lambda pkt: pkt.is_announce),
+        ConditionalField(BitField("grandmasterClockQuality", 0, 32), lambda pkt: pkt.is_announce),
+        ConditionalField(ByteField("grandmasterPriority2", 0), lambda pkt: pkt.is_announce),
+        ConditionalField(BitField("grandmasterIdentity", 0, 64), lambda pkt: pkt.is_announce),
+        ConditionalField(ShortField("stepsRemoved", 0), lambda pkt: pkt.is_announce),
+        ConditionalField(BitField("timeSource", 0, 8), lambda pkt: pkt.is_announce),
+
         # Sync
-        ConditionalField(BitField("reserved3_sync", 0, 80), lambda pkt: pkt.is_sync),
+        ConditionalField(TimestampField("originTimestamp_sync", 0), lambda pkt: pkt.is_sync),
+
+        #DelayResponse
+        ConditionalField(TimestampField("receiveTimestamp", 0), lambda pkt: pkt.is_delay_response),
+        ConditionalField(PortIdentityField("requestingPortIdentity_delayResponse", 0), lambda pkt: pkt.is_delay_response),
 
         # FollowUp
         ConditionalField(TimestampField("preciseOriginTimestamp", 0), lambda pkt: pkt.is_followup),
         ConditionalField(XStrFixedLenField("informationTlv", 0, 32), lambda pkt: pkt.is_followup),
 
         # PdelayReq
-        ConditionalField(BitField("reserved3_PdelayReq", 0, 80), lambda pkt: pkt.is_pdelay_req),
-        ConditionalField(BitField("reserved4", 0, 80), lambda pkt: pkt.is_pdelay_req),
+        ConditionalField(TimestampField("originTimestamp_PdelayReq", 0), lambda pkt: pkt.is_pdelay_req),
+        ConditionalField(BitField("reserved_PdelayReq", 0, 80), lambda pkt: pkt.is_pdelay_req),
 
         # PdelayResp
-        ConditionalField(
-            TimestampField("requestReceiptTimestamp", 0),
-            lambda pkt: pkt.is_pdelay_resp),
+        ConditionalField(TimestampField("requestReceiptTimestamp", 0),lambda pkt: pkt.is_pdelay_resp),
+        ConditionalField(PortIdentityField("requestingPortIdentity_PdelayResp", 0), lambda pkt: pkt.is_pdelay_resp),
 
         # PdelayRespFollowUp
         ConditionalField(
@@ -90,6 +104,14 @@ class PTPv2(Packet):
     @property
     def is_pdelay_resp_followup(self):
         return(self.messageType == 0xA)
+    
+    @property
+    def is_announce(self):
+        return(self.messageType == 0xB)
+    
+    @property
+    def is_delay_response(self):
+        return(self.messageType == 0x9)
 
     def extract_padding(self, s):
         return "", s
