@@ -8,8 +8,9 @@
 
 
 FROM fedora:latest As builder
-RUN dnf -y install git-all make gcc dos2unix yum python3-pip iputils
+RUN dnf -y install git-all make gcc dos2unix yum python3-pip iputils wireguard-tools
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir netprotocols && \
     pip install --no-cache-dir scapy && \
-    pip install --no-cache-dir gptp
+    #pip install --no-cache-dir gptp && \
+    pip install --no-cache-dir wireguard
