@@ -1,11 +1,13 @@
 from scapy.fields import BitEnumField, BitField, ByteField, ConditionalField, FlagsField, \
         LongField, ShortField, SignedByteField, XBitField, XByteField, XIntField, XStrFixedLenField, SignedShortField
 from scapy.layers.l2 import Ether
+from scapy.layers.inet import UDP
 from scapy.packet import Packet, bind_layers
 
 from .fields import PortIdentityField, TimestampField
 
-#test
+PTP_EVENT_UDP_PORT =    319
+PTP_GENERAL_UDP_PORT =  320
 class PTPv2(Packet):
     name = "PTPv2"
 
@@ -118,3 +120,5 @@ class PTPv2(Packet):
 
 
 bind_layers(Ether, PTPv2, type=0x88F7)
+bind_layers(UDP, PTPv2, sport = PTP_EVENT_UDP_PORT)
+bind_layers(UDP, PTPv2, sport = PTP_GENERAL_UDP_PORT)
