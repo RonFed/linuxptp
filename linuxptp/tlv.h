@@ -312,6 +312,15 @@ struct msg_interval_req_tlv {
 	Octet         reserved[2];
 } PACKED;
 
+struct authentication_tlv {
+	Enumeration16 type;
+	UInteger16    length;
+	UInteger8     SPP;
+	UInteger8     secParamIndicator;
+	Octet         keyId[4];
+	uint8_t       ICV[0];
+}
+
 struct time_status_np {
 	int64_t       master_offset; /*nanoseconds*/
 	int64_t       ingress_time;  /*nanoseconds*/
