@@ -319,7 +319,7 @@ struct authentication_tlv {
 	UInteger8     secParamIndicator;
 	Octet         keyId[4];
 	uint8_t       ICV[0];
-}
+} PACKED;
 
 struct time_status_np {
 	int64_t       master_offset; /*nanoseconds*/
