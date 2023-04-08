@@ -19,7 +19,7 @@ make
 
 6)
 ./ptp4l -i eth0 -S -m
-
+./ptp4l -i eth0 -S -m -f ../configs/default.cfg 
 
 WireGuard:
 1)

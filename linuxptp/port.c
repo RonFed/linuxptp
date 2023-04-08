@@ -17,6 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include <arpa/inet.h>
+#include <openssl/evp.h>
+#include <openssl/hmac.h>
 #include <errno.h>
 #include <malloc.h>
 #include <stdlib.h>
@@ -1459,6 +1461,28 @@ static void port_syfufsm(struct port *p, enum syfu_event event,
 		}
 		break;
 	}
+}
+
+static int port_append_authentication(struct port *p, struct ptp_message *m) {
+	pr_err("hello \n");
+	msg_print(m, stdout);
+	struct authentication_tlv* auth;
+	struct tlv_extra *extra;
+	UInteger16 orig_len = m->header.messageLength;
+	unsigned int icv_len;
+	
+	extra = msg_tlv_append(m, sizeof(*auth));
+	auth = (struct authentication_tlv*)extra->tlv;
+	auth->type = TLV_AUTHENTICATION;
+	auth->length = sizeof(auth->SPP) + sizeof(auth->secParamIndicator) + sizeof(auth->keyId);
+
+	HMAC(EVP_sha256(), NULL/*key*/, 0 /*key_len*/,
+	 	m->data.buffer, orig_len,
+        auth->ICV, &icv_len /* digest_len*/);
+
+	auth->length += icv_len;
+
+	return 0;
 }
 
 static int port_pdelay_request(struct port *p)
@@ -2997,7 +3021,9 @@ int port_prepare_and_send(struct port *p, struct ptp_message *msg,
 			  enum transport_event event)
 {
 	int cnt;
-
+    if (p->authentication && port_append_authentication(p, msg)) {
+		return -1;
+	}
 	if (msg_pre_send(msg)) {
 		return -1;
 	}
@@ -3311,6 +3337,7 @@ struct port *port_open(const char *phc_device,
 	p->follow_up_info = config_get_int(cfg, p->name, "follow_up_info");
 	p->freq_est_interval = config_get_int(cfg, p->name, "freq_est_interval");
 	p->msg_interval_request = config_get_int(cfg, p->name, "msg_interval_request");
+	p->authentication = config_get_int(cfg, p->name, "authentication");
 	p->net_sync_monitor = config_get_int(cfg, p->name, "net_sync_monitor");
 	p->path_trace_enabled = config_get_int(cfg, p->name, "path_trace_enabled");
 	p->tc_spanning_tree = config_get_int(cfg, p->name, "tc_spanning_tree");
