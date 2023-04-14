@@ -1463,25 +1463,113 @@ static void port_syfufsm(struct port *p, enum syfu_event event,
 	}
 }
 
+static void generate_bad_key(uint8_t* key, uint8_t key_len, int seed) {
+	srand(seed);
+
+	for (size_t i = 0; i < key_len; i++){
+		key[i] = rand();
+	}
+}
+
 static int port_append_authentication(struct port *p, struct ptp_message *m) {
-	pr_err("hello \n");
-	msg_print(m, stdout);
+	//printf("appending auth\n");
+	
 	struct authentication_tlv* auth;
 	struct tlv_extra *extra;
 	UInteger16 orig_len = m->header.messageLength;
-	unsigned int icv_len;
+	unsigned int calculated_icv_len;
+	unsigned int expected_icv_len = 32;
 	
 	extra = msg_tlv_append(m, sizeof(*auth));
 	auth = (struct authentication_tlv*)extra->tlv;
+	m->header.messageLength += expected_icv_len;
+
 	auth->type = TLV_AUTHENTICATION;
 	auth->length = sizeof(auth->SPP) + sizeof(auth->secParamIndicator) + sizeof(auth->keyId);
+	uint8_t key[32] = {0};
+	generate_bad_key(key, 32, 100);
+	//printf("sign key[0]:0x%x sign key[1]: 0x%x", key[0], key[1]);
+	uint8_t* res = HMAC(EVP_sha256(), key/*key*/, 32 /*key_len*/,
+	 		m->data.buffer, orig_len,
+        	auth->ICV, &calculated_icv_len /* digest_len*/);
 
-	HMAC(EVP_sha256(), NULL/*key*/, 0 /*key_len*/,
-	 	m->data.buffer, orig_len,
-        auth->ICV, &icv_len /* digest_len*/);
+	if (expected_icv_len != calculated_icv_len) {
+		pr_err("ICV lengths don't match in auth appending\n");
+		return -1;
+	}
+	//printf("data len sent %hu sq %hu\n", orig_len, m->header.sequenceId);
 
-	auth->length += icv_len;
+	if (res == NULL) {
+		pr_err("failed to perform HMAC\n");
+		return -1;
+	}
 
+	auth->length += expected_icv_len;
+	//msg_print(m, stdout);
+	return 0;
+}
+
+static struct tlv_extra * port_get_auth_tlv_extra(struct ptp_message* m) {
+	struct tlv_extra *extra;
+
+	TAILQ_FOREACH(extra, &m->tlv_list, list) {
+		if (extra->tlv->type == TLV_AUTHENTICATION) {
+			return extra;
+		}
+	}
+
+	return NULL;
+}
+
+static int msg_verify_authentication(struct port *p, struct ptp_message *m) {
+	//printf("verify auth \n");
+	//msg_print(m, stdout);
+	struct tlv_extra *auth_extra = port_get_auth_tlv_extra(m);
+	if (auth_extra == NULL) {
+		pr_err("can't find auth tlv\n");
+		return -1;
+	}
+
+	struct authentication_tlv* auth_tlv = (struct authentication_tlv*) auth_extra->tlv;
+	unsigned long data_len = (unsigned long)auth_tlv - (unsigned long)m->data.buffer;
+	unsigned int recieved_icv_len = sizeof(struct TLV) + auth_tlv->length - offsetof(struct authentication_tlv, ICV);
+
+	//pr_err("data_len 0x%lu , icv_len 0x%x\n", data_len, recieved_icv_len);
+
+	uint8_t* icv_buffer = (uint8_t*) calloc(recieved_icv_len, 1);
+	if (icv_buffer == NULL) {
+		pr_err("failed to allocate icv buffer");
+		return -ENOMEM;
+	}
+
+	uint8_t key[32] = {0};
+	generate_bad_key(key, 32, 100);
+	unsigned int calculated_icv_len = 0;
+
+	uint8_t* res = HMAC(EVP_sha256(), key/*key*/, 32 /*key_len*/,
+	 		m->data.buffer, data_len,
+        	icv_buffer, &calculated_icv_len /* digest_len*/);
+
+	if (res == NULL) {
+		pr_err("failed to perform HMAC\n");
+		return -1;
+	}
+
+	if (calculated_icv_len != recieved_icv_len) {
+		pr_err("ICV lengths don't match");
+		return -1;
+	}
+	//printf("verify key[0]:0x%x verify key[1]: 0x%x", key[0], key[1]);
+	//printf("rec_icv[0] 0x%x, calc_icv[0]: 0x%x \n", auth_tlv->ICV[0], icv_buffer[0]);
+	if(memcmp(icv_buffer, auth_tlv->ICV, calculated_icv_len) != 0) {
+		pr_err("ICV don't match, dropping message");
+		return -1;
+	} else {
+		//printf("ICV match !!\n");
+	}
+
+exit:
+	free(icv_buffer);
 	return 0;
 }
 
@@ -2930,6 +3018,11 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 		return EV_NONE;
 	}
 	port_stats_inc_rx(p, msg);
+	if (p->authentication && msg_verify_authentication(p, msg)) {
+		pr_err("authentication requiered but invalid, dropping message\n");
+		msg_put(msg);
+		return EV_NONE;
+	}
 	if (port_ignore(p, msg)) {
 		msg_put(msg);
 		return EV_NONE;

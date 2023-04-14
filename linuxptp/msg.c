@@ -100,13 +100,13 @@ static uint8_t *msg_suffix(struct ptp_message *m)
 {
 	switch (msg_type(m)) {
 	case SYNC:
-		return NULL;
+		return m->sync.suffix;
 	case DELAY_REQ:
 		return m->delay_req.suffix;
 	case PDELAY_REQ:
-		return NULL;
+		return m->pdelay_req.suffix;
 	case PDELAY_RESP:
-		return NULL;
+		return m->pdelay_resp.suffix;
 	case FOLLOW_UP:
 		return m->follow_up.suffix;
 	case DELAY_RESP:
@@ -180,6 +180,27 @@ static void port_id_pre_send(struct PortIdentity *pid)
 	pid->portNumber = htons(pid->portNumber);
 }
 
+static int suffix_authentication_offset(uint8_t* suffix, int suffix_len)
+{
+	Enumeration16 tlv_type;
+	UInteger16 tlv_len;
+	struct TLV* tlv_ptr;
+	uint16_t suffix_offset = 0;
+
+	while (suffix_offset < suffix_len) {
+		tlv_ptr = (struct TLV*)suffix;
+		tlv_type = ntohs(tlv_ptr->type);
+		if (tlv_type == TLV_AUTHENTICATION) {
+			return suffix_offset;
+		}
+		tlv_len = ntohs(tlv_ptr->length);
+
+		suffix_offset += (sizeof(struct TLV) + tlv_len);
+		suffix += (sizeof(struct TLV) + tlv_len);
+	}
+	return -1;
+}
+
 static int suffix_post_recv(struct ptp_message *msg, int len)
 {
 	uint8_t *ptr = msg_suffix(msg);
@@ -188,6 +209,8 @@ static int suffix_post_recv(struct ptp_message *msg, int len)
 
 	if (!ptr)
 		return 0;
+
+	suffix_authentication_offset(ptr, len);
 
 	while (len >= sizeof(struct TLV)) {
 		extra = tlv_extra_alloc();
@@ -243,6 +266,10 @@ static void timestamp_post_recv(struct ptp_message *m, struct Timestamp *ts)
 
 	m->ts.pdu.sec  = ((uint64_t)lsb) | (((uint64_t)msb) << 32);
 	m->ts.pdu.nsec = ntohl(ts->nanoseconds);
+
+	ts->seconds_lsb = ntohl(ts->seconds_lsb);
+	ts->seconds_msb = ntohs(ts->seconds_msb);
+	ts->nanoseconds = ntohl(ts->nanoseconds);
 }
 
 static void timestamp_pre_send(struct Timestamp *ts)
@@ -421,7 +448,7 @@ int msg_post_recv(struct ptp_message *m, int cnt)
 		port_id_post_recv(&m->management.targetPortIdentity);
 		break;
 	}
-
+	//pr_err("cnt %u pdulen %u", cnt, pdulen);
 	suffix_len = suffix_post_recv(m, cnt - pdulen);
 	if (suffix_len < 0) {
 		return suffix_len;
@@ -544,31 +571,32 @@ void msg_print(struct ptp_message *m, FILE *fp)
 	fprintf(fp,
 		"\t"
 		"%-10s "
-//		"versionPTP         0x%02X "
-//		"messageLength      %hu "
-//		"domainNumber       %u "
-//		"reserved1          0x%02X "
-//		"flagField          0x%02X%02X "
-//		"correction         %lld "
-//		"reserved2          %u "
-//		"sourcePortIdentity ... "
+		"versionPTP         0x%02X "
+		"messageLength      %hu "
+		"domainNumber       %u "
+		"reserved1          0x%02X "
+		"flagField          0x%02X%02X "
+		"correction         %ld "
+		"reserved2          %u "
+		//"sourcePortIdentity ... "
 		"sequenceId %4hu "
-//		"control            %u "
-//		"logMessageInterval %d "
+		"control            %u "
+		"logMessageInterval %d "
 		,
 		msg_type_string(msg_type(m)),
-//		m->header.ver,
-//		m->header.messageLength,
-//		m->header.domainNumber,
-//		m->header.reserved1,
-//		m->header.flagField[0],
-//		m->header.flagField[1],
-//		m->header.correction,
-//		m->header.reserved2,
-//		m->header.sourcePortIdentity,
-		m->header.sequenceId
-//		m->header.control,
-//		m->header.logMessageInterval
+		m->header.ver,
+		m->header.messageLength,
+		m->header.domainNumber,
+		m->header.reserved1,
+		m->header.flagField[0],
+		m->header.flagField[1],
+		m->header.correction,
+		m->header.reserved2,
+		//m->header.sourcePortIdentity,
+		m->header.sequenceId,
+		m->header.control,
+		m->header.logMessageInterval
+
 		);
 	fprintf(fp, "\n");
 }

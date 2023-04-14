@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
+#include <openssl/rand.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,6 +44,20 @@ void print_hmac(const char *hexkey, const char *data)
 
 int main(void)
 {
+    unsigned char key[128];
+
+    srand(100);
+    unsigned char x1 = rand();
+    unsigned char x2 = rand();
+    unsigned char x3 = rand();
+    // int rc = RAND_bytes(key,sizeof(key));
+    // if(rc != 1)
+    //     printf("failed\n");
+    // else {
+    //     printf("%u %u %u", key[0], key[1], key[2]);
+    // }
+    printf("%u %u %u", x1, x2, x3);
+    exit(0);
     char hashString[100];
 
     puts("echo -n us-east-1|openssl dgst -sha256 -mac HMAC -macopt "
