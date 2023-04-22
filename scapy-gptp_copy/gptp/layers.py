@@ -120,5 +120,5 @@ class PTPv2(Packet):
 
 
 bind_layers(Ether, PTPv2, type=0x88F7)
-bind_layers(UDP, PTPv2, sport = PTP_EVENT_UDP_PORT)
-bind_layers(UDP, PTPv2, sport = PTP_GENERAL_UDP_PORT)
+#bind_layers(UDP, PTPv2, sport = PTP_EVENT_UDP_PORT)
+#bind_layers(UDP, PTPv2, sport = PTP_GENERAL_UDP_PORT)
