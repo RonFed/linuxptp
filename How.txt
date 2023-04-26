@@ -1,0 +1,43 @@
+1)
+docker network create -d macvlan  --subnet=172.16.0.0/16   --gateway=172.16.0.1 --ip-range=172.16.37.0/24  -o parent=eth0  multicast
+
+2)
+docker build -t ron/ptp:v0.1 .
+
+3)
+docker run --rm -it --network=multicast --cap-add=NET_ADMIN -v C:\Users\shake\OneDrive\Codes\FinalProject:/linuxptp ron/ptp:v0.1 /bin/bash
+
+4)
+cd linuxptp/scapy-gptp_copy
+python3 setup.py install
+
+5)
+cd linuxptp/linuxptp
+dos2unix .//version.sh
+dos2unix .//incdefs.sh
+make
+
+6)
+(cd linuxptp)
+./linuxptp/linuxptp/ptp4l -i eth0 -S -m
+./ptp4l -i eth0 -S -m -f ../configs/default.cfg 
+
+WireGuard:
+1)
+ip link add dev wg0 type wireguard
+
+2)
+ip addr add 10.0.0.1/24 dev wg0
+ip addr add 10.0.0.2/24 dev wg0
+
+3)
+wg setconf wg0 linuxptp/wireguard/configA.conf
+wg setconf wg0 linuxptp/wireguard/configB.conf
+
+4)
+ip link set wg0 up
+
+5)
+In a second terminal run: 
+python3 /linuxptp/wireguard/ptp_mirror.py 10.0.0.1 eth0 10.0.0.2
+python3 /linuxptp/wireguard/ptp_mirror.py 10.0.0.2 eth0 10.0.0.1
