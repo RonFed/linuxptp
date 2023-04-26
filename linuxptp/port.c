@@ -3018,6 +3018,13 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 		return EV_NONE;
 	}
 	port_stats_inc_rx(p, msg);
+	// TODO: DEBUGG
+	pr_info("Source: IP=%s, Port=%d, Interface=%s %d", 
+			inet_ntoa(msg->address.sin.sin_addr), 
+			msg->address.sin.sin_port,
+			interface_name(p->iface),
+			msg->management.targetPortIdentity.portNumber);
+	// TODO: DEBUGG
 	if (p->authentication && msg_verify_authentication(p, msg)) {
 		pr_err("authentication requiered but invalid, dropping message\n");
 		msg_put(msg);
