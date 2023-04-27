@@ -2573,6 +2573,11 @@ void process_pdelay_resp_fup(struct port *p, struct ptp_message *m)
 void process_sync(struct port *p, struct ptp_message *m)
 {
 	enum syfu_event event;
+
+	// TODO: DEBUGG
+	pr_info("Help = %d", m->header.reserved1);
+	// TODO: DEBUGG
+
 	switch (p->state) {
 	case PS_INITIALIZING:
 	case PS_FAULTY:
@@ -2620,6 +2625,9 @@ void process_sync(struct port *p, struct ptp_message *m)
 	    p->last_syncfup->header.sequenceId == m->header.sequenceId) {
 		event = SYNC_MATCH;
 	} else {
+		// TODO: DEBUGG
+		pr_info("Hello %d", m->header.reserved1);
+		// TODO: DEBUGG
 		event = SYNC_MISMATCH;
 	}
 	port_syfufsm(p, event, m);
@@ -2999,6 +3007,9 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 	msg->hwts.type = p->timestamping;
 
 	cnt = transport_recv(p->trp, fd, msg);
+	// TODO: DEBUGG
+	pr_info("Why? = %d", msg->header.reserved1);
+	// TODO: DEBUGG
 	if (cnt < 0) {
 		pr_err("%s: recv message failed", p->log_name);
 		msg_put(msg);
@@ -3018,13 +3029,11 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 		return EV_NONE;
 	}
 	port_stats_inc_rx(p, msg);
+
 	// TODO: DEBUGG
-	pr_info("Source: IP=%s, Port=%d, Interface=%s %d", 
-			inet_ntoa(msg->address.sin.sin_addr), 
-			msg->address.sin.sin_port,
-			interface_name(p->iface),
-			msg->management.targetPortIdentity.portNumber);
+	pr_info("Reserved1 header = %d", msg->header.reserved1);
 	// TODO: DEBUGG
+
 	if (p->authentication && msg_verify_authentication(p, msg)) {
 		pr_err("authentication requiered but invalid, dropping message\n");
 		msg_put(msg);

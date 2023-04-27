@@ -2,7 +2,7 @@
 docker network create -d macvlan  --subnet=172.16.0.0/16   --gateway=172.16.0.1 --ip-range=172.16.37.0/24  -o parent=eth0  multicast
 
 2)
-docker build -t ron/ptp:v0.1 .
+docker build -t ron/ptp:v0.1 .ls
 
 3)
 docker run --rm -it --network=multicast --cap-add=NET_ADMIN -v C:\Users\shake\OneDrive\Codes\FinalProject:/linuxptp ron/ptp:v0.1 /bin/bash
@@ -39,5 +39,5 @@ ip link set wg0 up
 
 5)
 In a second terminal run: 
-python3 /linuxptp/wireguard/ptp_mirror.py 10.0.0.1 eth0 10.0.0.2
-python3 /linuxptp/wireguard/ptp_mirror.py 10.0.0.2 eth0 10.0.0.1
+python3 linuxptp/wireguard/ptp_mirror.py 10.0.0.1 10.0.0.2 172.16.37.0 eth0
+python3 linuxptp/wireguard/ptp_mirror.py 10.0.0.2 10.0.0.1 172.16.37.1 eth0
