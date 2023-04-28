@@ -39,5 +39,10 @@ ip link set wg0 up
 
 5)
 In a second terminal run: 
-python3 linuxptp/wireguard/ptp_mirror.py 10.0.0.1 10.0.0.2 172.16.37.0 eth0
-python3 linuxptp/wireguard/ptp_mirror.py 10.0.0.2 10.0.0.1 172.16.37.1 eth0
+python3 linuxptp/wireguard/ptp_mirror.py 0
+python3 linuxptp/wireguard/ptp_mirror.py 1
+
+6)
+In a third terminal run: 
+python3 linuxptp/wireguard/wg_to_ptp4l.py 0
+python3 linuxptp/wireguard/wg_to_ptp4l.py 1

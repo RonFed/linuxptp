@@ -22,21 +22,18 @@ if ( args[1] == "1" ): # Second setup option
 
 # Initialize the WG endpoint socket
 es = socket(AF_INET, SOCK_DGRAM) 
-es.bind((wg_endpoint_ip, 0))
+es.bind((local_ip, 0))
 
 with socket(AF_PACKET, SOCK_RAW, ntohs(0x0003)) as sock:
-    sock.bind((PTP_INTERFACE_NAME, 0))
+    sock.bind(("eth0", 0))
     try:
         while True:
             raw_packet = sock.recv(1514)
             l2_pkt = Ether(raw_packet)
-            
-            # Catch out going PTP packets and send over WG tunnel
-            if l2_pkt.haslayer(UDP) and l2_pkt.haslayer('PTPv2'):
-                if l2_pkt[IP][UDP].dport == PTP_EVENT_PORT and l2_pkt[IP][UDP][PTPv2].reserved1 == 0:
-                    l2_pkt[IP][UDP][PTPv2].reserved1 = 1
-                    b_ptp = l2_pkt[IP][UDP].load
-                    es.sendto(b_ptp, (wg_peer_endpoint_ip, WIREGUARD_LISTEN_PORT)) # Send packet over WG tunnel 
+
+            if l2_pkt.haslayer(UDP) and l2_pkt.haslayer(IP) and l2_pkt[IP][UDP].dport == 51820:
+                b_ptp = l2_pkt[IP][UDP].load
+                es.sendto(b_ptp, (local_ip, PTP_EVENT_PORT)) 
 
     except Exception as e:
         print(e)
