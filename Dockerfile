@@ -8,7 +8,7 @@
 
 
 FROM fedora:latest As builder
-RUN dnf -y install git-all make gcc dos2unix yum python3-pip iputils net-tools iproute wireguard-tools openssl openssl-devel iptables-services
+RUN dnf -y install git-all make gcc dos2unix yum python3-pip iputils net-tools iproute wireguard-tools openssl openssl-devel iptables-services netcat
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir netprotocols && \
     pip install --no-cache-dir scapy && \
