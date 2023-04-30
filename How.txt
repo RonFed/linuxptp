@@ -8,7 +8,8 @@ docker build -t ron/ptp:v0.1 .
 docker run --rm -it --network=multicast --cap-add=NET_ADMIN -v C:\Users\shake\OneDrive\Codes\FinalProject:/linuxptp ron/ptp:v0.1 /bin/bash
 
 4)
-python3 linuxptp/scapy-gptp_copy/setup.py install
+cd linuxptp/scapy-gptp_copy
+python3 setup.py install
 
 5)
 cd linuxptp/linuxptp

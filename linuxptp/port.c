@@ -3002,6 +3002,7 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 	cnt = transport_recv(p->trp, fd, msg);
 	// TODO: DEBUGG
 	pr_info("After recv = %u", msg->header.reserved1);
+	//pr_info("SequenceId = %u", ntohs(msg->header.sequenceId));
 	// TODO: DEBUGG
 	if (cnt < 0) {
 		pr_err("%s: recv message failed", p->log_name);
@@ -3024,7 +3025,7 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 	port_stats_inc_rx(p, msg);
 
 	// TODO: DEBUGG
-	pr_info("After port stats = %d", msg->header.reserved1);
+	// pr_info("After port stats = %d", msg->header.reserved1);
 	// TODO: DEBUGG
 
 	if (p->authentication && msg_verify_authentication(p, msg)) {
