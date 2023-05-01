@@ -1,5 +1,6 @@
 import sys
 import threading
+import base64
 from socket import *
 from scapy.all import sniff
 from scapy.layers.l2 import Ether
@@ -7,7 +8,7 @@ from scapy.layers.inet import UDP, IP
 from gptp.layers import PTPv2
 
 PTP_EVENT_PORT          = 319
-WIREGUARD_LISTEN_PORT   = (21841 if sys.argv[1] == "0" else 41414)
+WG_PORT                 = 500
 PTP_INTERFACE_NAME      = "eth0"
 WG_ENDPOINT_IP, WG_PEER_ENDPOINT_IP, LOCAL_IP = (
     ("10.0.0.1", "10.0.0.2", "172.16.37.0") if sys.argv[1] == "0" else
@@ -31,23 +32,25 @@ def pass_ptp_packets_to_wg(recv_socket, stop_event):
                 if l2_pkt[IP][UDP].dport == PTP_EVENT_PORT and l2_pkt[IP][UDP][PTPv2].reserved1 == 0:
                     l2_pkt[IP][UDP][PTPv2].reserved1 = 1
                     b_ptp = l2_pkt[IP][UDP].load
-                    forward_socket.sendto(b_ptp, (WG_PEER_ENDPOINT_IP, WIREGUARD_LISTEN_PORT)) # Send packet over WG tunnel 
-            
+                    #m = "ABC"
+                    #bm = m.encode('ascii')
+                    bytes_sent = forward_socket.sendto(b_ptp, (WG_PEER_ENDPOINT_IP, WG_PORT)) # Send packet over WG tunnel 
+
     except Exception as e:
         print(e)
 
 def pass_wg_packets_to_ptp(recv_socket, stop_event):
-    #forward_socket = socket(AF_INET, SOCK_DGRAM) 
-    #forward_socket.bind((LOCAL_IP, 0))
+    forward_socket = socket(AF_INET, SOCK_DGRAM) 
+    forward_socket.bind((LOCAL_IP, 0))
 
     try:
         while not stop_event.is_set():
             raw_packet = recv_socket.recv(1514)
-            l2_pkt = Ether(raw_packet)
-            print(l2_pkt.show())
-            if l2_pkt.haslayer(UDP) and l2_pkt.haslayer(IP) and l2_pkt[IP][UDP].dport == 51820:
-                b_ptp = l2_pkt[IP][UDP].load
-                #forward_socket.sendto(b_ptp, (LOCAL_IP, PTP_EVENT_PORT)) 
+            #l2_pkt = UDP(raw_packet)
+            print(raw_packet.hex())
+            #b_ptp = l2_pkt[UDP].load
+            #bytes_sent = forward_socket.sendto(b_ptp, (LOCAL_IP, PTP_EVENT_PORT)) 
+            #print(status)
 
     except Exception as e:
         print(e)
@@ -57,13 +60,9 @@ def pass_wg_packets_to_ptp(recv_socket, stop_event):
 ptp_recv_socket = socket(AF_PACKET, SOCK_RAW, ntohs(0x0003))
 ptp_recv_socket.bind((PTP_INTERFACE_NAME, 0))
 
-#wg_recv_socket = socket(AF_INET, SOCK_STREAM) 
 wg_recv_socket = socket(AF_INET, SOCK_DGRAM)
-#wg_recv_socket = socket(AF_PACKET, SOCK_RAW, ntohs(0x0003))
-wg_recv_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-wg_recv_socket.setsockopt(SOL_SOCKET, SO_REUSEPORT, 1)
-print(LOCAL_IP, WG_ENDPOINT_IP, WIREGUARD_LISTEN_PORT)
-wg_recv_socket.bind((LOCAL_IP, WIREGUARD_LISTEN_PORT))
+wg_recv_socket.bind((WG_ENDPOINT_IP, WG_PORT))
+print(f'Listening on {WG_PEER_ENDPOINT_IP}:{WG_PORT}')
 
 # create stop events for the two threads
 stop_event1 = threading.Event()
