@@ -29,12 +29,12 @@ def pass_ptp_packets_to_wg(recv_socket, stop_event):
             
             # Catch out going PTP packets and send over WG tunnel
             if l2_pkt.haslayer(UDP) and l2_pkt.haslayer('PTPv2'):
-                if l2_pkt[IP][UDP].dport == PTP_EVENT_PORT and l2_pkt[IP][UDP][PTPv2].reserved1 == 0:
+                if l2_pkt[IP].src == LOCAL_IP and l2_pkt[IP][UDP].dport == PTP_EVENT_PORT and l2_pkt[IP][UDP][PTPv2].reserved1 == 0:
                     l2_pkt[IP][UDP][PTPv2].reserved1 = 1
-                    b_ptp = l2_pkt[IP][UDP].load
-                    #m = "ABC"
-                    #bm = m.encode('ascii')
-                    bytes_sent = forward_socket.sendto(b_ptp, (WG_PEER_ENDPOINT_IP, WG_PORT)) # Send packet over WG tunnel 
+                    #b_ptp = l2_pkt[IP][UDP][PTPv2].load
+                    #b_ptp = "ABC".encode('ascii')
+                    bytes_sent = forward_socket.sendto(bytes(l2_pkt), (WG_PEER_ENDPOINT_IP, WG_PORT)) # Send packet over WG tunnel 
+                    #print(f"Sent {bytes_sent} bytes over WG tunnel")
 
     except Exception as e:
         print(e)
@@ -46,11 +46,10 @@ def pass_wg_packets_to_ptp(recv_socket, stop_event):
     try:
         while not stop_event.is_set():
             raw_packet = recv_socket.recv(1514)
-            #l2_pkt = UDP(raw_packet)
-            print(raw_packet.hex())
-            #b_ptp = l2_pkt[UDP].load
-            #bytes_sent = forward_socket.sendto(b_ptp, (LOCAL_IP, PTP_EVENT_PORT)) 
-            #print(status)
+            print(f"Recived: {Ether(raw_packet)[IP][UDP][PTPv2].reserved1}")
+            b_ptp = Ether(raw_packet)[IP][UDP][PTPv2].load
+            bytes_sent = forward_socket.sendto(raw_packet, (LOCAL_IP, PTP_EVENT_PORT)) 
+            #print(f"Sent {bytes_sent} bytes to ptp4l")
 
     except Exception as e:
         print(e)
