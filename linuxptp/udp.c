@@ -257,9 +257,6 @@ no_event:
 static int udp_recv(struct transport *t, int fd, void *buf, int buflen,
 		    struct address *addr, struct hw_timestamp *hwts)
 {
-	if (fd == WIREGUARD_PORT) {
-		printf("wg udp_recv");
-	}
 	return sk_receive(fd, buf, buflen, addr, hwts, MSG_DONTWAIT);
 }
 
