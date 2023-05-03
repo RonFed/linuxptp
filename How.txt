@@ -27,9 +27,14 @@ make
 
 ~~~~~WireGuard~~~~~
 1)
+(probably only once)
+dos2unix ./linuxptp/wireguard/setup_wg1.sh
+dos2unix ./linuxptp/wireguard/setup_wg2.sh
+
+2)
 ./linuxptp/wireguard/setup_wg1.sh
 ./linuxptp/wireguard/setup_wg2.sh
 
-2)
+3)
 python3 linuxptp/wireguard/wireguard_ptp4l.py 0
 python3 linuxptp/wireguard/wireguard_ptp4l.py 1

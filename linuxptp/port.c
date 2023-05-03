@@ -2890,6 +2890,7 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 	enum fsm_event event = EV_NONE;
 	struct ptp_message *msg;
 	int cnt, fd = p->fda.fd[fd_index], err;
+	bool is_wg = false;
 
 	switch (fd_index) {
 	case FD_ANNOUNCE_TIMER:
@@ -2991,6 +2992,8 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 			return EV_FAULT_DETECTED;
 		else
 			return EV_NONE;
+	case FD_WIREGUARD:
+		is_wg = true;
 	}
 
 	msg = msg_allocate();
@@ -3008,7 +3011,7 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 	}
 	err = msg_post_recv(msg, cnt);
 	// TODO: DEBUGG
-	pr_info("A: %u %u %d", msg->header.sequenceId, msg->header.reserved1, err);
+	pr_info("%s %u %u %d", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1, err);
 	// pr_info("SequenceId = %u", ntohs(msg->header.sequenceId));
 	// msg_print(msg, stdout);
 	// TODO: DEBUGG
@@ -3035,7 +3038,7 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 		msg_put(msg);
 		return EV_NONE;
 	}
-	if (msg_sots_missing(msg) &&
+	if (msg_sots_missing(msg) && !is_wg &&
 	    !(p->timestamping == TS_P2P1STEP && msg_type(msg) == PDELAY_REQ)) {
 		pr_err("%s: received %s without timestamp",
 		       p->log_name, msg_type_string(msg_type(msg)));
