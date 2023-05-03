@@ -47,8 +47,8 @@ def pass_wg_packets_to_ptp(recv_socket, stop_event):
         while not stop_event.is_set():
             raw_packet = recv_socket.recv(1514)
             print(f"Recived: {Ether(raw_packet)[IP][UDP][PTPv2].reserved1}")
-            b_ptp = Ether(raw_packet)[IP][UDP][PTPv2].load
-            bytes_sent = forward_socket.sendto(raw_packet, (LOCAL_IP, PTP_EVENT_PORT)) 
+            b_ptp = Ether(raw_packet)[IP][UDP][PTPv2]
+            bytes_sent = forward_socket.sendto(bytes(b_ptp), (LOCAL_IP, PTP_EVENT_PORT)) 
             #print(f"Sent {bytes_sent} bytes to ptp4l")
 
     except Exception as e:
