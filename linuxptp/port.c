@@ -3000,10 +3000,6 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 	msg->hwts.type = p->timestamping;
 
 	cnt = transport_recv(p->trp, fd, msg);
-	// TODO: DEBUGG
-	// pr_info("After recv = %u", ntohs(msg->header.reserved1));
-	//pr_info("SequenceId = %u", ntohs(msg->header.sequenceId));
-	// TODO: DEBUGG
 
 	if (cnt < 0) {
 		pr_err("%s: recv message failed", p->log_name);
@@ -3012,7 +3008,7 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 	}
 	err = msg_post_recv(msg, cnt);
 	// TODO: DEBUGG
-	pr_info("After recv = %u", msg->header.reserved1);
+	pr_info("A: %u %u %d", msg->header.sequenceId, msg->header.reserved1, err);
 	// pr_info("SequenceId = %u", ntohs(msg->header.sequenceId));
 	// msg_print(msg, stdout);
 	// TODO: DEBUGG
@@ -3029,10 +3025,6 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 		return EV_NONE;
 	}
 	port_stats_inc_rx(p, msg);
-
-	// TODO: DEBUGG
-	// pr_info("After validation = %u", ntohs(msg->header.reserved1));
-	// TODO: DEBUGG
 
 	if (p->authentication && msg_verify_authentication(p, msg)) {
 		pr_err("authentication requiered but invalid, dropping message\n");
