@@ -59,21 +59,21 @@ def pass_wg_packets_to_ptp(recv_socket, stop_event):
 ptp_recv_socket = socket(AF_PACKET, SOCK_RAW, ntohs(0x0003))
 ptp_recv_socket.bind((PTP_INTERFACE_NAME, 0))
 
-wg_recv_socket = socket(AF_INET, SOCK_DGRAM)
-wg_recv_socket.bind((WG_ENDPOINT_IP, WG_PORT))
-print(f'Listening on {WG_PEER_ENDPOINT_IP}:{WG_PORT}')
+# wg_recv_socket = socket(AF_INET, SOCK_DGRAM)
+# wg_recv_socket.bind((WG_ENDPOINT_IP, WG_PORT))
+# print(f'Listening on {WG_PEER_ENDPOINT_IP}:{WG_PORT}')
 
 # create stop events for the two threads
 stop_event1 = threading.Event()
-stop_event2 = threading.Event()
+#stop_event2 = threading.Event()
 
 # create two threads for receiving packets on the two sockets
 t1 = threading.Thread(target=pass_ptp_packets_to_wg, args=(ptp_recv_socket, stop_event1))
-t2 = threading.Thread(target=pass_wg_packets_to_ptp, args=(wg_recv_socket, stop_event2))
+#t2 = threading.Thread(target=pass_wg_packets_to_ptp, args=(wg_recv_socket, stop_event2))
 
 # start the two threads
 t1.start()
-t2.start()
+#t2.start()
 
 # wait for the threads to finish
 try:
@@ -82,8 +82,8 @@ try:
 except KeyboardInterrupt:
     print("Terminating threads...")
     stop_event1.set()
-    stop_event2.set()
+ #   stop_event2.set()
 
 # wait for the threads to finish
 t1.join()
-t2.join()
+#t2.join()

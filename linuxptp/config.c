@@ -303,6 +303,7 @@ struct config_item config_tab[] = {
 	GLOB_ITEM_STR("productDescription", ";;"),
 	PORT_ITEM_STR("ptp_dst_mac", "01:1B:19:00:00:00"),
 	PORT_ITEM_STR("p2p_dst_mac", "01:80:C2:00:00:0E"),
+	PORT_ITEM_STR("wg_ipaddr", "DEFUALT"),
 	GLOB_ITEM_STR("revisionData", ";;"),
 	GLOB_ITEM_INT("sanity_freq_limit", 200000000, 0, INT_MAX),
 	PORT_ITEM_INT("serverOnly", 0, 0, 1),

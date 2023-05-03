@@ -39,6 +39,7 @@
 
 #define EVENT_PORT        319
 #define GENERAL_PORT      320
+#define WIREGUARD_PORT    500
 #define PTP_PRIMARY_MCAST_IPADDR "224.0.1.129"
 #define PTP_PDELAY_MCAST_IPADDR  "224.0.0.107"
 
@@ -88,6 +89,33 @@ static int udp_close(struct transport *t, struct fdarray *fda)
 	close(fda->fd[0]);
 	close(fda->fd[1]);
 	return 0;
+}
+
+static int open_wg_socket(const char *name, struct in_addr* wg_addr, short port) {
+	struct sockaddr_in addr;
+	int fd;
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr = *wg_addr;
+	addr.sin_port = htons(port);
+
+	fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (fd < 0) {
+		pr_err("socket failed: %m");
+		goto no_socket;
+	}
+
+	if (bind(fd, (struct sockaddr *) &addr, sizeof(addr))) {
+		pr_err("bind failed: %m");
+		goto no_option;
+	}
+
+	return fd;
+no_option:
+	close(fd);
+no_socket:
+	return -1;
 }
 
 static int open_socket(const char *name, struct in_addr mc_addr[2], short port,
@@ -149,14 +177,31 @@ no_socket:
 enum { MC_PRIMARY, MC_PDELAY };
 
 static struct in_addr mcast_addr[2];
+static struct in_addr wg_addr;
 
 static int udp_open(struct transport *t, struct interface *iface,
 		    struct fdarray *fda, enum timestamp_type ts_type)
 {
 	struct udp *udp = container_of(t, struct udp, t);
 	const char *name = interface_name(iface);
+	char* wg_ipaddr = NULL;
 	uint8_t event_dscp, general_dscp;
-	int efd, gfd, ttl;
+	int efd, gfd, ttl, wgfd;
+
+	wg_ipaddr = config_get_string(t->cfg, NULL, "wg_ipaddr");
+	if (strcmp(wg_ipaddr, "DEFUALT") != 0) {
+		if (!inet_aton(wg_ipaddr, &wg_addr)){
+			printf("cannot inet\n");
+			return -1;
+		}
+		wgfd = open_wg_socket(name, &wg_addr, WIREGUARD_PORT);
+		if (wgfd < 0){
+			goto no_event;
+		}
+		printf("opened wg\n");
+	} else {
+		printf("defualt wg\n");
+	}
 
 	ttl = config_get_int(t->cfg, name, "udp_ttl");
 	udp->mac.len = 0;
@@ -198,6 +243,7 @@ static int udp_open(struct transport *t, struct interface *iface,
 
 	fda->fd[FD_EVENT] = efd;
 	fda->fd[FD_GENERAL] = gfd;
+	fda->fd[FD_WIREGUARD] = wgfd;
 	return 0;
 
 no_timestamping:
@@ -211,6 +257,9 @@ no_event:
 static int udp_recv(struct transport *t, int fd, void *buf, int buflen,
 		    struct address *addr, struct hw_timestamp *hwts)
 {
+	if (fd == WIREGUARD_PORT) {
+		printf("wg udp_recv");
+	}
 	return sk_receive(fd, buf, buflen, addr, hwts, MSG_DONTWAIT);
 }
 
