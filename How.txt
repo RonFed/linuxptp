@@ -19,7 +19,9 @@ make
 
 6)
 ./linuxptp/linuxptp/ptp4l -i eth0 -S -m
-./ptp4l -i eth0 -S -m -f ../configs/default.cfg 
+./ptp4l -i eth0 -S -m -f ../configs/default.cfg
+./ptp4l -i eth0 -S -m -f ../configs/wg_A.cfg 
+./ptp4l -i eth0 -S -m -f ../configs/wg_B.cfg  
 
 
 
