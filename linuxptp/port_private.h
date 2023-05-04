@@ -159,7 +159,25 @@ struct port {
 	int inhibit_multicast_service;
 	/* slave event monitoring */
 	struct monitor *slave_event_monitor;
+
+	//TODO: DEBUG
+	TAILQ_HEAD(msg_queue, msg_queue_element) msg_queue;
+	//TODO: DEBUG
 };
+
+// TODO: DEBUG
+enum msg_origin {
+	ORIGIN_NOT_WIREGUARD,
+	ORIGIN_WIREGUARD,
+};
+
+struct msg_queue_element {
+	struct ptp_message* ptp_msg;
+	enum msg_origin origin;
+	bool ready;
+	TAILQ_ENTRY(msg_queue_element) list;
+};
+// TODO: DEBUG
 
 #define portnum(p) (p->portIdentity.portNumber)
 

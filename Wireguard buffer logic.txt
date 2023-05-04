@@ -1,0 +1,30 @@
+1) Recieved a packet
+	1.1) Check if it's a non WG packet
+		1.1.1) Insert to the end of queue
+	1.2) If it's a WG packet
+		1.2.1) Get it's SequenceId
+		1.2.2) Find corresponding packet according to Type and SequnceId
+		1.2.3) If first node in queue	
+			1.2.3.1) Dequeue
+			1.2.3.2) Continue to proccess packet
+		1.2.4) If it's not the first node in queue
+			1.2.4.1) Flag it as ready to release
+		1.2.5) If it's not in queue
+			1.2.5.1) Add it to the queue
+			
+Recieved a packet:
+	1) Get it's SequenceId and origin
+	2) Search in queue for: Same SequenceId and Type but different origin
+		2.1) Found
+			2.1.1) Check if packet was changed
+				2.1.1.1) No: Flag the packet as ready to be released
+				2.1.1.2) Yes: keep only the WG packet
+		2.2) Not found - add it to end of queue 
+	3) Delete all old packets from queue (based on timestamp)
+	4) If head is good release it
+
+-Data
+-Arrival timestamp: so we can delete after 10ms
+-Type: SYNC or FOLLOW_UP
+-Origin: WireGuard or not
+-Ready to release: A flag

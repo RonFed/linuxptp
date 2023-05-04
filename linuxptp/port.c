@@ -61,6 +61,36 @@ static int port_is_ieee8021as(struct port *p);
 static int port_is_uds(struct port *p);
 static void port_nrate_initialize(struct port *p);
 
+// TODO: DEBUGG
+void create_msg_queue_element(struct msg_queue_element* new_element, struct ptp_message *ptp_msg,enum msg_origin origin) {
+	new_element->ptp_msg = ptp_msg;
+	new_element->origin = origin;
+	new_element->ready = 0;
+}
+
+struct msg_queue_element* find_corresponding_msg_in_queue(struct port *p, struct ptp_message *msg, enum msg_origin origin) {
+	struct msg_queue_element *curr; 
+	int cnt = 0;
+	TAILQ_FOREACH(curr, &p->msg_queue, list) {
+		printf("%d\n",cnt++);
+		if ( (curr->origin != origin) && (curr->ptp_msg->header.sequenceId == msg->header.sequenceId)
+			&& (msg_type(curr->ptp_msg) == msg_type(msg)) ) { 	
+			printf("Yes %d %d %d %d %d %d\n",
+					msg_type(curr->ptp_msg),msg_type(msg),
+					curr->ptp_msg->header.sequenceId,msg->header.sequenceId,
+					curr->origin, origin);
+			return curr;
+		}
+	}
+	
+	printf("No\n");
+	struct msg_queue_element* new_msg_obj = (struct msg_queue_element*)malloc(sizeof(struct msg_queue_element));
+	create_msg_queue_element(new_msg_obj, msg, origin);
+	TAILQ_INSERT_TAIL(&p->msg_queue, new_msg_obj, list);
+	return new_msg_obj;
+}
+// TODO: DEBUGG
+
 static int announce_compare(struct ptp_message *m1, struct ptp_message *m2)
 {
 	struct announce_msg *a = &m1->announce, *b = &m2->announce;
@@ -3012,8 +3042,7 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 	err = msg_post_recv(msg, cnt);
 	// TODO: DEBUGG
 	pr_info("%s %u %u %d", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1, err);
-	// pr_info("SequenceId = %u", ntohs(msg->header.sequenceId));
-	// msg_print(msg, stdout);
+	find_corresponding_msg_in_queue(p, msg, is_wg ? ORIGIN_WIREGUARD : ORIGIN_NOT_WIREGUARD);
 	// TODO: DEBUGG
 	if (err) {
 		switch (err) {
@@ -3355,6 +3384,7 @@ struct port *port_open(const char *phc_device,
 
 	memset(p, 0, sizeof(*p));
 	TAILQ_INIT(&p->tc_transmitted);
+	TAILQ_INIT(&p->msg_queue);
 
 	p->name = interface_name(interface);
 	if (asprintf(&p->log_name, "port %d (%s)", number, p->name) == -1) {
