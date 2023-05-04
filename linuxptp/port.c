@@ -69,16 +69,18 @@ void create_msg_queue_element(struct msg_queue_element* new_element, struct ptp_
 }
 
 struct msg_queue_element* find_corresponding_msg_in_queue(struct port *p, struct ptp_message *msg, enum msg_origin origin) {
+	msg_get(msg);
 	struct msg_queue_element *curr; 
 	int cnt = 0;
 	TAILQ_FOREACH(curr, &p->msg_queue, list) {
-		printf("%d\n",cnt++);
+		// printf("%d ",cnt++);
+		// printf("%s %s %d %d %d %d\n",
+		// 			msg_type_string(msg_type(curr->ptp_msg)),msg_type_string(msg_type(msg)),
+		// 			curr->ptp_msg->header.sequenceId,msg->header.sequenceId,
+		// 			curr->origin, origin);
 		if ( (curr->origin != origin) && (curr->ptp_msg->header.sequenceId == msg->header.sequenceId)
 			&& (msg_type(curr->ptp_msg) == msg_type(msg)) ) { 	
-			printf("Yes %d %d %d %d %d %d\n",
-					msg_type(curr->ptp_msg),msg_type(msg),
-					curr->ptp_msg->header.sequenceId,msg->header.sequenceId,
-					curr->origin, origin);
+			printf("Found match!\n");
 			return curr;
 		}
 	}
@@ -3041,7 +3043,7 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 	}
 	err = msg_post_recv(msg, cnt);
 	// TODO: DEBUGG
-	pr_info("%s %u %u %d", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1, err);
+	pr_info("%s sequnce id:%u reserved1:%u err:%d", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1, err);
 	find_corresponding_msg_in_queue(p, msg, is_wg ? ORIGIN_WIREGUARD : ORIGIN_NOT_WIREGUARD);
 	// TODO: DEBUGG
 	if (err) {
