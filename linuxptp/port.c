@@ -65,11 +65,10 @@ static void port_nrate_initialize(struct port *p);
 void create_msg_queue_element(struct msg_queue_element* new_element, struct ptp_message *ptp_msg,enum msg_origin origin) {
 	new_element->ptp_msg = ptp_msg;
 	new_element->origin = origin;
-	new_element->ready = 0;
+	new_element->ready = false;
 }
 
-struct msg_queue_element* find_corresponding_msg_in_queue(struct port *p, struct ptp_message *msg, enum msg_origin origin) {
-	msg_get(msg);
+bool find_corresponding_msg_in_queue(struct port *p, struct ptp_message *msg, enum msg_origin origin) {
 	struct msg_queue_element *curr; 
 	int cnt = 0;
 	TAILQ_FOREACH(curr, &p->msg_queue, list) {
@@ -80,16 +79,29 @@ struct msg_queue_element* find_corresponding_msg_in_queue(struct port *p, struct
 		// 			curr->origin, origin);
 		if ( (curr->origin != origin) && (curr->ptp_msg->header.sequenceId == msg->header.sequenceId)
 			&& (msg_type(curr->ptp_msg) == msg_type(msg)) ) { 	
-			printf("Found match!\n");
-			return curr;
+			//printf("Found match!\n");
+			// TODO compare packets contents
+			curr->ready = true;
+			return true;
 		}
 	}
 	
-	printf("No\n");
+	//printf("No\n");
+	msg_get(msg);
 	struct msg_queue_element* new_msg_obj = (struct msg_queue_element*)malloc(sizeof(struct msg_queue_element));
 	create_msg_queue_element(new_msg_obj, msg, origin);
 	TAILQ_INSERT_TAIL(&p->msg_queue, new_msg_obj, list);
-	return new_msg_obj;
+	return false;
+}
+
+struct ptp_message* try_dequeue_msg(struct port* p) {
+	struct msg_queue_element* first = TAILQ_FIRST(&p->msg_queue);
+	if (first != NULL && first->ready) {
+		TAILQ_REMOVE(&p->msg_queue, first, list);
+		return first->ptp_msg;
+	} else {
+		return NULL;
+	}
 }
 // TODO: DEBUGG
 
@@ -2921,6 +2933,7 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 {
 	enum fsm_event event = EV_NONE;
 	struct ptp_message *msg;
+	struct ptp_message *msg_to_process;
 	int cnt, fd = p->fda.fd[fd_index], err;
 	bool is_wg = false;
 
@@ -3043,8 +3056,19 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 	}
 	err = msg_post_recv(msg, cnt);
 	// TODO: DEBUGG
-	pr_info("%s sequnce id:%u reserved1:%u err:%d", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1, err);
+	//pr_info("%s sequnce id:%u reserved1:%u err:%d", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1, err);
 	find_corresponding_msg_in_queue(p, msg, is_wg ? ORIGIN_WIREGUARD : ORIGIN_NOT_WIREGUARD);
+	msg_to_process = try_dequeue_msg(p);
+	if (msg_to_process != NULL) {
+		//pr_info("msg_to process refcount %d", msg_to_process->refcnt);
+		msg_put(msg);
+		msg = msg_to_process;
+	} else {
+		//pr_info("msg refcount %d", msg->refcnt);
+		msg_put(msg);
+		return EV_NONE;
+	}
+	pr_info("process %s sequnce id:%u reserved1:%u", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1);
 	// TODO: DEBUGG
 	if (err) {
 		switch (err) {
