@@ -162,6 +162,7 @@ struct port {
 
 	//TODO: DEBUG
 	TAILQ_HEAD(msg_queue, msg_queue_element) msg_queue;
+	bool wg_enabled;
 	//TODO: DEBUG
 };
 
@@ -174,6 +175,7 @@ enum msg_origin {
 struct msg_queue_element {
 	struct ptp_message* ptp_msg;
 	enum msg_origin origin;
+	tmv_t expiration;
 	bool ready;
 	TAILQ_ENTRY(msg_queue_element) list;
 };

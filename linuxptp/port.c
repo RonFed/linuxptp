@@ -66,6 +66,12 @@ void create_msg_queue_element(struct msg_queue_element* new_element, struct ptp_
 	new_element->ptp_msg = ptp_msg;
 	new_element->origin = origin;
 	new_element->ready = false;
+	
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	tmv_t expirae_delta = nanoseconds_to_tmv(NS_PER_SEC);
+	tmv_t expiration = tmv_add(timespec_to_tmv(now), expirae_delta);
+	new_element->expiration = expiration;
 }
 
 bool find_corresponding_msg_in_queue(struct port *p, struct ptp_message *msg, enum msg_origin origin) {
@@ -79,9 +85,9 @@ bool find_corresponding_msg_in_queue(struct port *p, struct ptp_message *msg, en
 		// 			curr->origin, origin);
 		if ( (curr->origin != origin) && (curr->ptp_msg->header.sequenceId == msg->header.sequenceId)
 			&& (msg_type(curr->ptp_msg) == msg_type(msg)) ) { 	
-			printf("Found match!\n");
+			//printf("Found match!\n");
 			if ( (curr->ptp_msg->ts.pdu.sec == msg->ts.pdu.sec) && (curr->ptp_msg->ts.pdu.nsec == msg->ts.pdu.nsec) ) {
-				printf("Found good match!\n");
+				//printf("Found good match!\n");
 				curr->ready = true;
 				return true;
 			}
@@ -108,24 +114,20 @@ struct ptp_message* try_dequeue_msg(struct port* p) {
 
 void clean_msg_queue(struct port* p) {
 	struct msg_queue_element *curr;
+	struct msg_queue_element *temp;
 	struct timespec now;
-	tmv_t time_interval;
 
-	time_interval.ns = NS_PER_SEC;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 	tmv_t now_tmv = timespec_to_tmv(now);
 
-	TAILQ_FOREACH(curr, &p->msg_queue, list) {
-		printf("Timestamps: %ld %ld %ld %u\n",
-			tmv_to_nanoseconds(now_tmv),
-			tmv_to_nanoseconds(curr->ptp_msg->hwts.sw),
-			time_interval.ns,
-			curr->ptp_msg->hwts.type
-			);
-		if ( tmv_to_nanoseconds(now_tmv) - tmv_to_nanoseconds(curr->ptp_msg->hwts.ts) > time_interval.ns ) {
+	for (curr = TAILQ_FIRST(&p->msg_queue); curr != NULL;) {
+		temp = TAILQ_NEXT(curr, list);
+		if (!curr->ready && tmv_to_nanoseconds(now_tmv) > tmv_to_nanoseconds(curr->expiration) ) {
+			//printf("Expired packet found %s seqId %u ready %u\n", msg_type_string(msg_type(curr->ptp_msg)), curr->ptp_msg->header.sequenceId, curr->ready);
 			TAILQ_REMOVE(&p->msg_queue, curr, list);
 			msg_put(curr->ptp_msg);
 		}
+		curr = temp;
 	}
 }
 // TODO: DEBUGG
@@ -3081,20 +3083,22 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 	}
 	err = msg_post_recv(msg, cnt);
 	// TODO: DEBUGG
-	//pr_info("%s sequnce id:%u reserved1:%u err:%d", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1, err);
-	clean_msg_queue(p);
-	find_corresponding_msg_in_queue(p, msg, is_wg ? ORIGIN_WIREGUARD : ORIGIN_NOT_WIREGUARD);
-	msg_to_process = try_dequeue_msg(p);
-	if (msg_to_process != NULL) {
-		//pr_info("msg_to process refcount %d", msg_to_process->refcnt);
-		msg_put(msg);
-		msg = msg_to_process;
-	} else {
-		//pr_info("msg refcount %d", msg->refcnt);
-		msg_put(msg);
-		return EV_NONE;
+	//pr_info("got %s sequnce id:%u reserved1:%u err:%d", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1, err);
+	if (p->wg_enabled) {
+		clean_msg_queue(p);
+		find_corresponding_msg_in_queue(p, msg, is_wg ? ORIGIN_WIREGUARD : ORIGIN_NOT_WIREGUARD);
+		msg_to_process = try_dequeue_msg(p);
+		if (msg_to_process != NULL) {
+			//pr_info("msg_to process refcount %d", msg_to_process->refcnt);
+			msg_put(msg);
+			msg = msg_to_process;
+		} else {
+			//pr_info("msg refcount %d", msg->refcnt);
+			msg_put(msg);
+			return EV_NONE;
+		}
 	}
-	pr_info("process %s sequnce id:%u reserved1:%u", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1);
+	//pr_info("process %s sequnce id:%u reserved1:%u", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1);
 	// TODO: DEBUGG
 	if (err) {
 		switch (err) {
@@ -3470,6 +3474,15 @@ struct port *port_open(const char *phc_device,
 	p->bmca = config_get_int(cfg, interface_name(interface), "BMCA");
 	p->trp = transport_create(cfg, config_get_int(cfg,
 			      interface_name(interface), "network_transport"));
+	// TODO DEBUG
+	char* wg_ipaddr = NULL;
+	wg_ipaddr = config_get_string(cfg, NULL, "wg_ipaddr");
+	if (strcmp(wg_ipaddr, "DEFUALT") != 0) {
+		p->wg_enabled = true;
+	} else {
+		p->wg_enabled = false;
+	}
+	// TODO DEBUG
 	if (!p->trp) {
 		goto err_log_name;
 	}
