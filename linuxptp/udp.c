@@ -111,6 +111,14 @@ static int open_wg_socket(const char *name, struct in_addr* wg_addr, short port)
 		goto no_option;
 	}
 
+	/* Enable the sk_check_fupsync option, perhaps. */
+	int on = 1;
+	if (setsockopt(fd, SOL_SOCKET, SO_TIMESTAMPNS, &on, sizeof(on)) < 0) {
+		pr_err("ioctl SO_TIMESTAMPNS failed: %m");
+		return -1;
+	}
+	return 0;
+
 	return fd;
 no_option:
 	close(fd);
