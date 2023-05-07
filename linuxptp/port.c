@@ -3098,7 +3098,7 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 			return EV_NONE;
 		}
 	}
-	//pr_info("process %s sequnce id:%u reserved1:%u", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1);
+	pr_info("process %s sequnce id:%u reserved1:%u", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1);
 	// TODO: DEBUGG
 	if (err) {
 		switch (err) {

