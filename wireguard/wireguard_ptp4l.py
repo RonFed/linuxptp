@@ -22,6 +22,7 @@ def pass_ptp_packets_to_wg():
     forward_socket = socket(AF_INET, SOCK_DGRAM) 
     forward_socket.bind((WG_ENDPOINT_IP, 0))
     
+    allready_sent = set()
     try:
         while True:
             raw_packet = ptp_recv_socket.recv(1514)
@@ -37,8 +38,11 @@ def pass_ptp_packets_to_wg():
                         udp_packet[PTPv2].reserved1 == 0:
                     udp_packet[PTPv2].reserved1 = 1
                     b_ptp = udp_packet[PTPv2]
-                    forward_socket.sendto(bytes(b_ptp), (WG_PEER_ENDPOINT_IP, WG_PORT)) # Send packet over WG tunnel 
-
+                    
+                    packet_identifier = (udp_packet[PTPv2].sequenceId, udp_packet[PTPv2].messageType)
+                    if packet_identifier not in allready_sent:
+                        forward_socket.sendto(bytes(b_ptp), (WG_PEER_ENDPOINT_IP, WG_PORT)) # Send packet over WG tunnel 
+                        allready_sent.add(packet_identifier)
     except Exception as e:
         print(e)
 

