@@ -3083,7 +3083,7 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 	}
 	err = msg_post_recv(msg, cnt);
 	// TODO: DEBUGG
-	//pr_info("got %s sequnce id:%u reserved1:%u err:%d", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1, err);
+	//pr_info("got %s sequnce id:%u wg:%u err:%d", msg_type_string(msg_type(msg)), msg->header.sequenceId, is_wg, err);
 	if (p->wg_enabled) {
 		clean_msg_queue(p);
 		find_corresponding_msg_in_queue(p, msg, is_wg ? ORIGIN_WIREGUARD : ORIGIN_NOT_WIREGUARD);

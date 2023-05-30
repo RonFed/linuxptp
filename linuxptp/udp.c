@@ -107,7 +107,7 @@ static int open_wg_socket(const char *name, struct in_addr* wg_addr, short port)
 	}
 
 	if (bind(fd, (struct sockaddr *) &addr, sizeof(addr))) {
-		pr_err("bind failed: %m");
+		pr_err("bind failed on WG socket: %m");
 		goto no_option;
 	}
 
@@ -305,10 +305,44 @@ static int udp_send(struct transport *t, struct fdarray *fda,
 		pr_err("sendto failed: %m");
 		return -errno;
 	}
+
+
+	// TODO: DEBUG
+
 	/*
 	 * Get the time stamp right away.
 	 */
-	return event == TRANS_EVENT ? sk_receive(fd, junk, len, NULL, hwts, MSG_ERRQUEUE) : cnt;
+	int res = event == TRANS_EVENT ? sk_receive(fd, junk, len, NULL, hwts, MSG_ERRQUEUE) : cnt;
+
+	struct config *cfg = t->cfg;
+	static struct in_addr wg_peer_addr;
+	char* wg_ipaddr = NULL;
+	wg_ipaddr = config_get_string(cfg, NULL, "wg_ipaddr");
+
+	if (strcmp(wg_ipaddr, "DEFUALT") != 0) {
+		memset(&addr_buf, 0, sizeof(addr_buf));
+		addr_buf.sin.sin_family = AF_INET;
+		if ( strcmp(wg_ipaddr, "10.0.0.1") == 0 ) {
+			inet_aton("10.0.0.2", &wg_peer_addr);
+		} else {
+			inet_aton("10.0.0.1", &wg_peer_addr);
+		}
+		addr_buf.sin.sin_addr = wg_peer_addr;
+		addr_buf.len = sizeof(addr_buf.sin);
+		addr = &addr_buf;
+		addr->sin.sin_port = htons(WIREGUARD_PORT);
+		
+		fd = fda->fd[FD_WIREGUARD];
+
+		cnt = sendto(fd, buf, len, 0, &addr->sa, sizeof(addr->sin));
+		if (cnt < 1) {
+			pr_err("sendto failed: %m");
+			return -errno;
+		}
+	} 
+	// TODO: DEBUG
+
+	return res;
 }
 
 static void udp_release(struct transport *t)

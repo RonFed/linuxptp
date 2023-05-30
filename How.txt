@@ -22,7 +22,7 @@ make
 
 
 PTP4L running modes:
-./linuxptp/linuxptp/ptp4l -i eth0 -S -m       ~Basic run with no authentication~
+./ptp4l -i eth0 -S -m       ~Basic run with no authentication~
 ./ptp4l -i eth0 -S -m -f ../configs/TLV.cfg    ~TLV authentication~
 ./ptp4l -i eth0 -S -m -f ../configs/wg_A.cfg  ~Wireguard Alice~
 ./ptp4l -i eth0 -S -m -f ../configs/wg_B.cfg  ~Wireguard Bob~ 
