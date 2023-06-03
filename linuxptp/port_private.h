@@ -163,6 +163,12 @@ struct port {
 	//TODO: DEBUG
 	TAILQ_HEAD(msg_queue, msg_queue_element) msg_queue;
 	bool wg_enabled;
+	uint64_t bytes_recv[FD_WIREGUARD + 1];
+	uint32_t stats_freq_print;
+	uint32_t expired_packets;
+	uint32_t mismatch_auth_tlv;
+	uint32_t processed_msgs;
+	uint64_t total_ns_in_buffer;
 	//TODO: DEBUG
 };
 

