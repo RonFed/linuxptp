@@ -120,6 +120,22 @@ struct ptp_message* try_dequeue_msg(struct port* p) {
 	}
 }
 
+struct ptp_message* dequeue_msg(struct port* p) {
+	struct msg_queue_element* first = TAILQ_FIRST(&p->msg_queue);
+	tmv_t insetation_time = tmv_sub(first->expiration, nanoseconds_to_tmv(NS_PER_SEC * EXPIRE_TIME_SEC));
+	if (first != NULL) {
+		struct timespec now;
+		clock_gettime(CLOCK_MONOTONIC, &now);
+		TAILQ_REMOVE(&p->msg_queue, first, list);
+		tmv_t period_in_buffer = tmv_sub(timespec_to_tmv(now), insetation_time);
+		p->total_ns_in_buffer += tmv_to_nanoseconds(period_in_buffer);
+		p->processed_msgs++;
+		return first->ptp_msg;
+	} else {
+		return NULL;
+	}
+}
+
 void clean_msg_queue(struct port* p) {
 	struct msg_queue_element *curr;
 	struct msg_queue_element *temp;
@@ -136,6 +152,20 @@ void clean_msg_queue(struct port* p) {
 			msg_put(curr->ptp_msg);
 			p->expired_packets++;
 		}
+		curr = temp;
+	}
+}
+
+void demo_clean_msg_queue(struct port* p) {
+	struct msg_queue_element *curr;
+	struct msg_queue_element *temp;
+	struct timespec now;
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	tmv_t now_tmv = timespec_to_tmv(now);
+
+	for (curr = TAILQ_FIRST(&p->msg_queue); curr != NULL;) {
+		temp = TAILQ_NEXT(curr, list);
 		curr = temp;
 	}
 }
@@ -3111,10 +3141,20 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 		}
 	}
 	
+	struct config *cfg = clock_config(p->clock);
+	char* wg_ipaddr = NULL;
+	wg_ipaddr = config_get_string(cfg, NULL, "wg_ipaddr");
 	if (p->wg_enabled) {
-		clean_msg_queue(p);
-		find_corresponding_msg_in_queue(p, msg, is_wg ? ORIGIN_WIREGUARD : ORIGIN_NOT_WIREGUARD);
-		msg_to_process = try_dequeue_msg(p);
+		// For the demo
+		if (strcmp(wg_ipaddr, "10.0.0.3") != 0) {	
+			clean_msg_queue(p);
+			find_corresponding_msg_in_queue(p, msg, is_wg ? ORIGIN_WIREGUARD : ORIGIN_NOT_WIREGUARD);
+			msg_to_process = try_dequeue_msg(p);
+		} else {
+			demo_clean_msg_queue(p);
+			find_corresponding_msg_in_queue(p, msg, is_wg ? ORIGIN_WIREGUARD : ORIGIN_NOT_WIREGUARD);
+			msg_to_process =  dequeue_msg(p);
+		}
 		if (msg_to_process != NULL) {
 			//pr_info("msg_to process refcount %d", msg_to_process->refcnt);
 			msg_put(msg);
