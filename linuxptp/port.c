@@ -62,6 +62,8 @@ static int port_is_uds(struct port *p);
 static void port_nrate_initialize(struct port *p);
 
 // TODO: DEBUGG
+#define EXPIRE_TIME_SEC		0.01
+
 void create_msg_queue_element(struct msg_queue_element* new_element, struct ptp_message *ptp_msg,enum msg_origin origin) {
 	new_element->ptp_msg = ptp_msg;
 	new_element->origin = origin;
@@ -69,7 +71,7 @@ void create_msg_queue_element(struct msg_queue_element* new_element, struct ptp_
 	
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
-	tmv_t expirae_delta = nanoseconds_to_tmv(NS_PER_SEC);
+	tmv_t expirae_delta = nanoseconds_to_tmv(NS_PER_SEC * EXPIRE_TIME_SEC);
 	tmv_t expiration = tmv_add(timespec_to_tmv(now), expirae_delta);
 	new_element->expiration = expiration;
 }
@@ -104,8 +106,14 @@ bool find_corresponding_msg_in_queue(struct port *p, struct ptp_message *msg, en
 
 struct ptp_message* try_dequeue_msg(struct port* p) {
 	struct msg_queue_element* first = TAILQ_FIRST(&p->msg_queue);
+	tmv_t insetation_time = tmv_sub(first->expiration, nanoseconds_to_tmv(NS_PER_SEC * EXPIRE_TIME_SEC));
 	if (first != NULL && first->ready) {
+		struct timespec now;
+		clock_gettime(CLOCK_MONOTONIC, &now);
 		TAILQ_REMOVE(&p->msg_queue, first, list);
+		tmv_t period_in_buffer = tmv_sub(timespec_to_tmv(now), insetation_time);
+		p->total_ns_in_buffer += tmv_to_nanoseconds(period_in_buffer);
+		p->processed_msgs++;
 		return first->ptp_msg;
 	} else {
 		return NULL;
@@ -126,6 +134,7 @@ void clean_msg_queue(struct port* p) {
 			//printf("Expired packet found %s seqId %u ready %u\n", msg_type_string(msg_type(curr->ptp_msg)), curr->ptp_msg->header.sequenceId, curr->ready);
 			TAILQ_REMOVE(&p->msg_queue, curr, list);
 			msg_put(curr->ptp_msg);
+			p->expired_packets++;
 		}
 		curr = temp;
 	}
@@ -1593,7 +1602,6 @@ static struct tlv_extra * port_get_auth_tlv_extra(struct ptp_message* m) {
 }
 
 static int msg_verify_authentication(struct port *p, struct ptp_message *m) {
-	//printf("verify auth \n");
 	//msg_print(m, stdout);
 	struct tlv_extra *auth_extra = port_get_auth_tlv_extra(m);
 	if (auth_extra == NULL) {
@@ -1627,12 +1635,14 @@ static int msg_verify_authentication(struct port *p, struct ptp_message *m) {
 	}
 
 	if (calculated_icv_len != recieved_icv_len) {
+		p->mismatch_auth_tlv++;
 		pr_err("ICV lengths don't match");
 		return -1;
 	}
 	//printf("verify key[0]:0x%x verify key[1]: 0x%x", key[0], key[1]);
 	//printf("rec_icv[0] 0x%x, calc_icv[0]: 0x%x \n", auth_tlv->ICV[0], icv_buffer[0]);
 	if(memcmp(icv_buffer, auth_tlv->ICV, calculated_icv_len) != 0) {
+		p->mismatch_auth_tlv++;
 		pr_err("ICV don't match, dropping message");
 		return -1;
 	} else {
@@ -3083,7 +3093,24 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 	}
 	err = msg_post_recv(msg, cnt);
 	// TODO: DEBUGG
-	//pr_info("got %s sequnce id:%u wg:%u err:%d", msg_type_string(msg_type(msg)), msg->header.sequenceId, is_wg, err);
+	//pr_info("process %s sequnce id:%u reserved1:%u", msg_type_string(msg_type(msg)), msg->header.sequenceId, msg->header.reserved1);
+	if (fd_index <= FD_WIREGUARD){
+		// Collect stats
+		p->bytes_recv[fd_index] += cnt;
+		p->stats_freq_print++;
+		if (p->stats_freq_print == 20) {
+			for (int i = 0; i < FD_WIREGUARD + 1; i++) {
+				printf("bytes recv on fd %d : %lu\n", i, p->bytes_recv[i]);
+			}
+			printf("expired packets %u\n", p->expired_packets);
+			printf("mismatched in auth tlv %u\n", p->mismatch_auth_tlv);
+			p->stats_freq_print = 0;
+			if (p->processed_msgs > 0) {
+				printf("avg stay in buffer %f s\n", (double)(p->total_ns_in_buffer / p->processed_msgs) / NS_PER_SEC);
+			}
+		}
+	}
+	
 	if (p->wg_enabled) {
 		clean_msg_queue(p);
 		find_corresponding_msg_in_queue(p, msg, is_wg ? ORIGIN_WIREGUARD : ORIGIN_NOT_WIREGUARD);
@@ -3482,6 +3509,12 @@ struct port *port_open(const char *phc_device,
 	} else {
 		p->wg_enabled = false;
 	}
+	memset(p->bytes_recv, 0, sizeof(p->bytes_recv));
+	p->stats_freq_print = 0;
+	p->expired_packets = 0;
+	p->mismatch_auth_tlv = 0;
+	p->total_ns_in_buffer = 0;
+	p->processed_msgs = 0;
 	// TODO DEBUG
 	if (!p->trp) {
 		goto err_log_name;
