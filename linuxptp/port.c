@@ -3100,13 +3100,13 @@ static enum fsm_event bc_event(struct port *p, int fd_index)
 		p->stats_freq_print++;
 		if (p->stats_freq_print == 20) {
 			for (int i = 0; i < FD_WIREGUARD + 1; i++) {
-				printf("bytes recv on fd %d : %lu\n", i, p->bytes_recv[i]);
+				//printf("bytes recv on fd %d : %lu\n", i, p->bytes_recv[i]);
 			}
-			printf("expired packets %u\n", p->expired_packets);
-			printf("mismatched in auth tlv %u\n", p->mismatch_auth_tlv);
+			//printf("expired packets %u\n", p->expired_packets);
+			//printf("mismatched in auth tlv %u\n", p->mismatch_auth_tlv);
 			p->stats_freq_print = 0;
 			if (p->processed_msgs > 0) {
-				printf("avg stay in buffer %f s\n", (double)(p->total_ns_in_buffer / p->processed_msgs) / NS_PER_SEC);
+				//printf("avg stay in buffer %f s\n", (double)(p->total_ns_in_buffer / p->processed_msgs) / NS_PER_SEC);
 			}
 		}
 	}

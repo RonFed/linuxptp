@@ -1,0 +1,11 @@
+defualt wg
+ptp4l[6328.949]: port 1 (eth0): INITIALIZING to LISTENING on INIT_COMPLETE
+ptp4l[6328.950]: port 0 (/var/run/ptp4l): INITIALIZING to LISTENING on INIT_COMPLETE
+ptp4l[6328.950]: port 0 (/var/run/ptp4lro): INITIALIZING to LISTENING on INIT_COMPLETE
+ptp4l[6335.687]: port 1 (eth0): new foreign master 0242ac.fffe.102500-1
+ptp4l[6335.716]: port 1 (eth0): LISTENING to MASTER on ANNOUNCE_RECEIPT_TIMEOUT_EXPIRES
+ptp4l[6335.717]: selected local clock 0242ac.fffe.102502 as best master
+ptp4l[6335.717]: port 1 (eth0): assuming the grand master role
+ptp4l[6336.385]: port 1 (eth0): new foreign master 0242ac.fffe.102501-1
+ptp4l[6339.688]: selected best master clock 0242ac.fffe.102500
+ptp4l[6339.690]: port 1 (eth0): MASTER to UNCALIBRATED on RS_SLAVE
