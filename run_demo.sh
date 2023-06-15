@@ -43,10 +43,13 @@ trap 'kill_background_processes' SIGINT SIGTERM
 # Create and run code in each image
 create_image_and_run_code "Master" "$code1_to_run" &
 pids+=($!)
+sleep 2
 create_image_and_run_code "Slave-WireGuard" "$code2_to_run" &
 pids+=($!)
+sleep 2
 create_image_and_run_code "Slave-NoAuth" "$code3_to_run" &
 pids+=($!)
+sleep 2
 create_image_and_run_code "Eve" "$code4_to_run"
 pids+=($!)
 
