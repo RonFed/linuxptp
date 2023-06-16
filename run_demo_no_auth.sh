@@ -40,7 +40,7 @@ sleep 2
 create_image_and_run_code "Slave-NoAuth" "$code2_to_run" & 
 pids+=($!)
 sleep 15
-python ./plotting/plotter_demo.py &
+winpty python ./plotting/plotter_demo.py &
 pids+=($!)
 create_image_and_run_code "Eve" "$code4_to_run"
 pids+=($!)

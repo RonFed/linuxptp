@@ -2,7 +2,7 @@ import time
 import matplotlib.pyplot as plt
 from scipy.signal import lfilter
 
-from watchdog.observers.polling import PollingObserver as Observer
+# from watchdog.observers.polling import PollingObserver as Observer
 
 # Global variables
 graph_names = ["Baseline", "Slave"]
@@ -73,11 +73,11 @@ for i in range(len(filenames)):
 update_graph()
 
 # Start the file change observer
-observer = Observer()
-for filename in filenames:
-    observer.schedule(None, path=filename)
+# observer = Observer()
+# for filename in filenames:
+#     observer.schedule(None, path=filename)
 
-observer.start()
+# observer.start()
 
 try:
     while True:
@@ -93,7 +93,7 @@ except KeyboardInterrupt:
     pass
 
 # Stop the observer
-observer.stop()
-observer.join()
+# observer.stop()
+# observer.join()
 
 plt.show()
