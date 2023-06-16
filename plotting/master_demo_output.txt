@@ -1,4 +1,0 @@
-opened wg
-ptp4l[16566.655]: port 1 (eth0): INITIALIZING to LISTENING on INIT_COMPLETE
-ptp4l[16566.656]: port 0 (/var/run/ptp4l): INITIALIZING to LISTENING on INIT_COMPLETE
-ptp4l[16566.657]: port 0 (/var/run/ptp4lro): INITIALIZING to LISTENING on INIT_COMPLETE

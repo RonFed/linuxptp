@@ -16,16 +16,9 @@ create_image_and_run_code() {
     winpty docker run --rm -it --network=multicast --name $image_setup_name --cap-add=NET_ADMIN -v "$dockerfile_path":/linuxptp "$image_name" //usr/bin/bash -c "$code_to_run"
 }
 
-# Image 1
-code1_to_run="./linuxptp/master.sh"
-
-# Image 2
+# Images codes
+code1_to_run="./linuxptp/master_wg.sh"
 code2_to_run="./linuxptp/wg_slave.sh"
-
-# Image 3
-code3_to_run="./linuxptp/no_auth_slave.sh"
-
-# Image 4
 code4_to_run="./linuxptp/eve.sh"
 
 # Function to kill all background processes
@@ -43,12 +36,12 @@ trap 'kill_background_processes' SIGINT SIGTERM
 # Create and run code in each image
 create_image_and_run_code "Master" "$code1_to_run" &
 pids+=($!)
-sleep 3
+sleep 2
 create_image_and_run_code "Slave-WireGuard" "$code2_to_run" & 
 pids+=($!)
-create_image_and_run_code "Slave-NoAuth" "$code3_to_run" &
+sleep 15
+python ./plotting/plotter_demo.py &
 pids+=($!)
-sleep 2
 create_image_and_run_code "Eve" "$code4_to_run"
 pids+=($!)
 

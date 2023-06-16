@@ -339,13 +339,6 @@ static int udp_send(struct transport *t, struct fdarray *fda,
 			pr_err("sendto failed: %m");
 			return -errno;
 		}
-
-		// For the demo
-		if ( strcmp(wg_ipaddr, "10.0.0.1") == 0 ) {
-			inet_aton("10.0.0.3", &wg_peer_addr);
-			addr_buf.sin.sin_addr;
-			cnt = sendto(fd, buf, len, 0, &addr->sa, sizeof(addr->sin));
-		}
 	} 
 	// TODO: DEBUG
 

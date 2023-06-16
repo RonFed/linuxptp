@@ -5,8 +5,8 @@ from scipy.signal import lfilter
 from watchdog.observers.polling import PollingObserver as Observer
 
 # Global variables
-graph_names = ["Baseline", "Slave-NoAuth", "Slave-WireGuard"]
-filenames = ["output_no_eve_no_auth.txt", "no_auth_demo_output.txt", "wg_auth_demo_output.txt"]
+graph_names = ["Baseline", "Slave"]
+filenames = ["plotting\\baseline.txt", "plotting\\slave.txt"]
 timestamps = [[] for _ in range(len(filenames))]
 master_offsets = [[] for _ in range(len(filenames))]
 
