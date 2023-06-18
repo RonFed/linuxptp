@@ -1,6 +1,7 @@
 First time setting up the docker:
 1)
 docker network create -d macvlan  --subnet=172.16.0.0/16   --gateway=172.16.0.1 --ip-range=172.16.37.0/24  -o parent=eth0  multicast
+docker network create -d macvlan  --subnet=172.17.0.0/16   --gateway=172.17.0.2 --ip-range=172.17.37.0/24  demo
 
 2)
 docker build -t ron/ptp:v0.1 .

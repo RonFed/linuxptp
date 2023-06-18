@@ -34,15 +34,15 @@ kill_background_processes() {
 trap 'kill_background_processes' SIGINT SIGTERM
 
 # Create and run code in each image
-create_image_and_run_code "Master" "$code1_to_run" &
+create_image_and_run_code "Master-WireGuard" "$code1_to_run" &
 pids+=($!)
 sleep 2
 create_image_and_run_code "Slave-WireGuard" "$code2_to_run" & 
 pids+=($!)
-sleep 15
-winpty python ./plotting/plotter_demo.py &
-pids+=($!)
-create_image_and_run_code "Eve" "$code4_to_run"
+#sleep 15
+#winpty python ./plotting/plotter_demo.py &
+#pids+=($!)
+create_image_and_run_code "Eve-WireGuard" "$code4_to_run"
 pids+=($!)
 
 # Wait for all background processes to finish
