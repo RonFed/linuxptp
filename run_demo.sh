@@ -1,13 +1,16 @@
 #!/bin/bash
 
 # Command 1
-#./run_demo_wg.sh & ./run_demo_no_auth.sh  && fg
+./run_demo_wg.sh
 
 # Command 2
-#./run_demo_no_auth.sh 
+./run_demo_tlv.sh
 
 # Command 3
-sleep 20
+./run_demo_no_auth.sh 
 
 # Command 4
-#python ./plotting/plotter_demo.py
+sleep 20
+
+# Command 5
+python ./plotting/plotter_demo.py

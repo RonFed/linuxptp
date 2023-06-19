@@ -8,17 +8,17 @@ dockerfile_path=$(pwd -W | sed 's,/,\\,g')
 
 # Function to create Docker image and run code
 create_image_and_run_code() {
-    local image_name="ron/ptp:v0.1"
+    local image_name="ptp_image"
     local image_setup_name=$1
     local code_to_run=$2
 
     echo "Creating Docker image: $image_setup_name"
-    winpty docker run --rm -it --network=demo --name $image_setup_name --cap-add=NET_ADMIN -v "$dockerfile_path":/linuxptp "$image_name" //usr/bin/bash -c "$code_to_run"
+    winpty docker run --rm -it --network=demo1 --name $image_setup_name --cap-add=NET_ADMIN -v "$dockerfile_path":/linuxptp "$image_name" //usr/bin/bash -c "$code_to_run"
 }
 
 # Images codes
 code1_to_run="./linuxptp/master_no_auth.sh"
-code2_to_run="./linuxptp/no_auth_slave.sh"
+code2_to_run="./linuxptp/slave_no_auth.sh"
 code4_to_run="./linuxptp/eve.sh"
 
 # Function to kill all background processes
@@ -42,7 +42,7 @@ pids+=($!)
 #sleep 15
 #winpty python ./plotting/plotter_demo.py &
 #pids+=($!)
-create_image_and_run_code "Eve-NoAuth" "$code4_to_run"
+create_image_and_run_code "Eve-NoAuth" "$code4_to_run" 
 pids+=($!)
 
 # Wait for all background processes to finish

@@ -13,12 +13,12 @@ create_image_and_run_code() {
     local code_to_run=$2
 
     echo "Creating Docker image: $image_setup_name"
-    winpty docker run --rm -it --network=demo3 --name $image_setup_name --cap-add=NET_ADMIN -v "$dockerfile_path":/linuxptp "$image_name" //usr/bin/bash -c "$code_to_run"
+    winpty docker run --rm -it --network=demo2 --name $image_setup_name --cap-add=NET_ADMIN -v "$dockerfile_path":/linuxptp "$image_name" //usr/bin/bash -c "$code_to_run"
 }
 
 # Images codes
-code1_to_run="./linuxptp/master_wg.sh"
-code2_to_run="./linuxptp/slave_wg.sh"
+code1_to_run="./linuxptp/master_tlv.sh"
+code2_to_run="./linuxptp/slave_tlv.sh"
 code4_to_run="./linuxptp/eve.sh"
 
 # Function to kill all background processes
@@ -34,15 +34,15 @@ kill_background_processes() {
 trap 'kill_background_processes' SIGINT SIGTERM
 
 # Create and run code in each image
-create_image_and_run_code "Master-WireGuard" "$code1_to_run" &
+create_image_and_run_code "Master-TLV" "$code1_to_run" &
 pids+=($!)
 sleep 2
-create_image_and_run_code "Slave-WireGuard" "$code2_to_run" & 
+create_image_and_run_code "Slave-TLV" "$code2_to_run" & 
 pids+=($!)
 #sleep 15
 #winpty python ./plotting/plotter_demo.py &
 #pids+=($!)
-create_image_and_run_code "Eve-WireGuard" "$code4_to_run" 
+create_image_and_run_code "Eve-TLV" "$code4_to_run" 
 pids+=($!)
 
 # Wait for all background processes to finish

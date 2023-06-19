@@ -1,15 +1,17 @@
 First time setting up the docker:
 1)
 docker network create -d macvlan  --subnet=172.16.0.0/16   --gateway=172.16.0.1 --ip-range=172.16.37.0/24  -o parent=eth0  multicast
-docker network create -d macvlan  --subnet=172.17.0.0/16   --gateway=172.17.0.2 --ip-range=172.17.37.0/24  demo
+docker network create -d macvlan  --subnet=172.16.0.0/16   --gateway=172.16.0.2 --ip-range=172.16.37.0/24  demo1
+docker network create -d macvlan  --subnet=172.17.0.0/16   --gateway=172.17.0.2 --ip-range=172.17.37.0/24  demo2
+docker network create -d macvlan  --subnet=172.18.0.0/16   --gateway=172.18.0.2 --ip-range=172.18.37.0/24  demo3
 
 2)
-docker build -t ron/ptp:v0.1 .
+docker build -t ptp_image .
 
 
 Each time we want a new container (Alice, Bob and Eve):
 1)
-docker run --rm -it --network=multicast --cap-add=NET_ADMIN -v C:\Users\shake\OneDrive\Codes\FinalProject:/linuxptp ron/ptp:v0.1 /bin/bash
+docker run --rm -it --network=multicast --cap-add=NET_ADMIN -v C:\Users\shake\OneDrive\Codes\FinalProject:/linuxptp ptp_image /bin/bash
 
 2)
 cd linuxptp/scapy-gptp_copy
