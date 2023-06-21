@@ -5,8 +5,8 @@ from scipy.signal import lfilter
 # from watchdog.observers.polling import PollingObserver as Observer
 
 # Global variables
-graph_names = ["Baseline", "Slave-NoAuth", "Slave-WG", "Slave-TLV"]
-filenames = ["plotting\\baseline.txt", "plotting\\slave_no_auth.txt", "plotting\\slave_wg.txt", "plotting\\slave_tlv.txt"]
+graph_names = ["Slave-NoAuth", "Slave-WG", "Slave-TLV"]
+filenames = ["plotting\\slave_no_auth.txt", "plotting\\slave_wg.txt", "plotting\\slave_tlv.txt"]
 timestamps = [[] for _ in range(len(filenames))]
 master_offsets = [[] for _ in range(len(filenames))]
 
@@ -29,7 +29,7 @@ def update_graph():
         y_values = lfilter(b, a, y_values)
         plt.plot(x_values, y_values, label=f"{graph_names[i]}")
 
-    legend = plt.legend(loc='upper right', fontsize='large')
+    legend = plt.legend(loc='upper left', fontsize='large')
     for text in legend.get_texts():
         text.set_fontweight('bold')
     plt.grid()

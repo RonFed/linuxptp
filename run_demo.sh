@@ -7,10 +7,10 @@
 ./run_demo_tlv.sh
 
 # Command 3
-./run_demo_no_auth.sh 
+./run_demo_no_auth.sh
 
 # Command 4
 sleep 20
 
 # Command 5
-python ./plotting/plotter_demo.py
+winpty python ./plotting/plotter_demo.py
