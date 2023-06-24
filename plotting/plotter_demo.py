@@ -5,8 +5,9 @@ from scipy.signal import lfilter
 # from watchdog.observers.polling import PollingObserver as Observer
 
 # Global variables
-graph_names = ["Slave-NoAuth", "Slave-WG", "Slave-TLV"]
+graph_names = ["Slave - No Authentication", "Slave - WireGuard", "Slave - TLV"]
 filenames = ["plotting\\slave_no_auth.txt", "plotting\\slave_wg.txt", "plotting\\slave_tlv.txt"]
+colors = ["red", "green", "blue"]
 timestamps = [[] for _ in range(len(filenames))]
 master_offsets = [[] for _ in range(len(filenames))]
 
@@ -16,9 +17,9 @@ def update_graph():
     
     plt.clf()
     plt.yscale("log")
-    plt.title('Master offset over time', fontweight='bold', fontsize=24)
-    plt.xlabel('Time[s]', fontweight='bold', fontsize=16)
-    plt.ylabel('Log(Master offset)[ns]', fontweight='bold', fontsize=16)
+    plt.title('Master offset over time', fontweight='bold', fontsize=36, fontfamily='serif', fontname='Georgia')
+    plt.xlabel('Time[s]', fontweight='bold', fontsize=24, fontfamily='serif')
+    plt.ylabel('Log(offset)[ns]', fontweight='bold', fontsize=24, fontfamily='serif')
 
     n = 15  # the larger n is, the smoother curve will be
     b = [1.0 / n] * n
@@ -27,9 +28,9 @@ def update_graph():
         x_values = timestamps[i]
         y_values = [abs(y) for y in master_offsets[i]]
         y_values = lfilter(b, a, y_values)
-        plt.plot(x_values, y_values, label=f"{graph_names[i]}")
+        plt.plot(x_values, y_values, label=f"{graph_names[i]}", color=colors[i])
 
-    legend = plt.legend(loc='upper left', fontsize='large')
+    legend = plt.legend(loc='upper left', fontsize='x-large')
     for text in legend.get_texts():
         text.set_fontweight('bold')
     plt.grid()
